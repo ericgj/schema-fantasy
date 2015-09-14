@@ -14,11 +14,15 @@ module.exports = function oneOf(validate,ctx){
   const results = listOfSchemas.map( (schema,i) => (
                     validate(focusSchema(ctx,i)) 
                   ));
-  const successResults = filter(prop('isSuccess'), results);
-  return (
-    successResults.length === 1 ? Success(identity)
-      : successResults.length === 0 ? Failure(["No conditions valid"]) 
-      : Failure(["More than one condition valid"])
+
+  const failResults = filter(prop('isFailure'),results);
+  const failErrs = chain((v) => v.orElse(identity), failResults);
+  const n = results.length - failResults.length;
+
+  return (  
+      (n === 1)  ? Success(identity)
+    : (n === 0)  ? Failure([Err.Compound("No conditions valid", ctx, failErrs)])
+    : /*else*/     Failure([Err.Single("More than one condition valid", ctx)])
   );
 }
 

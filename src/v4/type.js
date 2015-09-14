@@ -21,6 +21,6 @@ module.exports = function type(ctx){
                     (isInteger(value) && indexOf('integer', types)>=0)
                 );
   return valid ? Success(identity) 
-    : Failure([Err.Actual("Invalid type", ctx, actual)]) ;
+    : Failure([Err.Values("Invalid type", ctx, types.join(' or '), actual)]) ;
 }
 

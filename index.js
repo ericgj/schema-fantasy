@@ -21,8 +21,6 @@ const context = require('./src/context')
 const predicate = require('./src/predicate')
     , Predicate = predicate.Predicate;
 
-const flatten = chain(identity);
-
 /*******************************************************************************
  * Validate
  * Evaluate each predicate function on given context, and then apply each 
@@ -35,7 +33,7 @@ const validate = curry( (schema, value) => (
 function validateContext(ctx){
   const [schema, value] = context.getCurrent(ctx);
   const evalPred = compose(predicate.evaluate, getPred(ctx));
-  const valids = flatten( map(evalPred, keysIn(schema)) );
+  const valids = chain(evalPred, keysIn(schema));
   const root = valids.length === 0 ? Success(Nothing())
                                    : Success(curryN(valids.length, Nothing));
   return reduce( ap, root, valids );

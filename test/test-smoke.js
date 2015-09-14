@@ -10,7 +10,8 @@ test('allOf', (assert) => {
 
   const schema = {
     allOf: [
-      { type: 'integer' }
+      { type: 'integer' },
+      { type: 'number'  }
     ]
   }
 
@@ -20,6 +21,10 @@ test('allOf', (assert) => {
   const act2 = v.validate(schema, 1.1);
   assert.ok( act2.isFailure, "validation failed");
   console.log( act2.fold(map(e.toString), identity) );
+
+  const act3 = v.validate(schema, "1");
+  assert.ok( act3.isFailure, "validation failed");
+  console.log( act3.fold(map(e.toString), identity) );
 
   assert.end();
 });

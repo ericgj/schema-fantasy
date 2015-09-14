@@ -1,5 +1,7 @@
 const identity = require('ramda/src/identity');
+const chain = require('ramda/src/chain');
 const filter = require('ramda/src/filter');
+const map = require('ramda/src/map');
 const prop = require('ramda/src/prop');
 
 const Validation = require('data.validation')
@@ -15,9 +17,11 @@ module.exports = function allOf(validate,ctx){
                     validate(context.focusSchema(ctx,i)) 
                   ));
   const failResults = filter(prop('isFailure'), results);
+  const failErrs = chain((v) => v.orElse(identity), failResults);
+
   return (
     failResults.length === 0 ? Success(identity)
-      : Failure([Err.Compound("Not all conditions valid", ctx, failResults)])
+      : Failure([Err.Compound("Not all conditions valid", ctx, failErrs)])
   );
 }
 

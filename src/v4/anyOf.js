@@ -1,5 +1,6 @@
 const identity = require('ramda/src/identity');
 const filter = require('ramda/src/filter');
+const chain = require('ramda/src/chain');
 const prop = require('ramda/src/prop');
 
 const Validation = require('data.validation')
@@ -14,9 +15,13 @@ module.exports = function anyOf(validate,ctx){
   const results = listOfSchemas.map( (schema,i) => (
                     validate(focusSchema(ctx,i)) 
                   ));
-  return (
-    any( prop('isSuccess'), results) ? Success(identity)
-      : Failure(["No conditions valid"]) // perhaps adding the failed conditions into the error structure
+  
+  const failResults = filter(prop('isFailure'),results);
+  const failErrs = chain((v) => v.orElse(identity), failResults);
+
+  return (  
+    (failResults.length < results.length) ? Success(identity)
+      : Failure([Err.Compound("No conditions valid", ctx, failErrs)])
   );
 }
 
