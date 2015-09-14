@@ -7,17 +7,6 @@ const reduce = require('ramda/src/reduce');
 const ap = require('ramda/src/ap');
 const map = require('ramda/src/map');
 const keysIn = require('ramda/src/keysIn');
-const all = require('ramda/src/all');
-const prop = require('ramda/src/prop');
-const any = require('ramda/src/any');
-const append = require('ramda/src/append');
-const path = require('ramda/src/path');
-const always = require('ramda/src/always');
-const T = require('ramda/src/T');
-
-const filter = require('ramda/src/filter');
-const _type = require('ramda/src/type');
-const indexOf = require('ramda/src/indexOf');
 
 const Type = require('union-type');
 const Validation = require('data.validation');
@@ -27,15 +16,12 @@ const Success = Validation.Success;
 const Failure = Validation.Failure;
 const Nothing = Maybe.Nothing;
 
-const flatten = chain(identity);
-const isStringOrNumber = (x) => typeof x === 'string' || typeof x === 'number'
-const typeOf = compose((t) => t.toLowerCase(), _type);
+const context = require('./src/context')
+    , Context = context.Context;
+const predicate = require('./src/predicate')
+    , Predicate = predicate.Predicate;
 
-/* future
-const allOf = require('./src/v4/allOf');
-const anyOf = require('./src/v4/anyOf');
-const oneOf = require('./src/v4/oneOf');
-*/
+const flatten = chain(identity);
 
 /*******************************************************************************
  * Validate
@@ -46,169 +32,30 @@ const validate = curry( (schema, value) => (
   validateContext( Context.Cursor([],[],schema,value) )
 ));
 
-const validateContext = (ctx) => {
-  const [schema, value] = getCurrent(ctx);
-  const evalPred = compose(evaluate, getPred(ctx));
+function validateContext(ctx){
+  const [schema, value] = context.getCurrent(ctx);
+  const evalPred = compose(predicate.evaluate, getPred(ctx));
   const valids = flatten( map(evalPred, keysIn(schema)) );
   const root = valids.length === 0 ? Success(Nothing())
                                    : Success(curryN(valids.length, Nothing));
   return reduce( ap, root, valids );
-};
-
-
+}
 
 /*******************************************************************************
  * Get predicate eval function from schema key and context
- * getPred :: Context.Cursor c -> String k -> Predicate k c
+ * getPred :: Context.Cursor c -> String k -> Predicate k c   
+ *  or     :: Context.Cursor c -> String k -> Predicate k Function c
  */
 const getPred = curry( (ctx, key) => {
   if (!(key in Predicate)) return Predicate.UNKNOWN();
-  return Predicate[key](focusSchema(ctx,key)) ;
+  const pred = Predicate[key], n = pred.length;  // check arity of predicate function
+  const args = (n === 0        ? []
+                : n === 1      ? [context.focusSchema(ctx,key)]
+                /*otherwise*/  : [validateContext, context.focusSchema(ctx,key)]
+               );
+  return pred.apply(pred,args); 
 });
 
 
-
-/*******************************************************************************
- * allOf predicate   
- * Context.Cursor -> Validation
- */
-const allOf = (ctx) => {
-  const [listOfSchemas, value] = getCurrent(ctx);
-  const results = listOfSchemas.map( (schema,i) => (
-                    validateContext(focusSchema(ctx,i)) 
-                  ));
-  const failResults = filter(prop('isFailure'), results);
-  return (
-    failResults.length === 0 ? Success(identity)
-      : Failure([Err.Compound("Not all conditions valid", ctx, failResults)])
-  );
-};
-
-/*******************************************************************************
- * anyOf predicate   
- * Context.Cursor -> Validation
- */
-const anyOf = (ctx) => {
-  const [listOfSchemas, value] = getCurrent(ctx);
-  const results = listOfSchemas.map( (schema,i) => (
-                    validateContext(focusSchema(ctx,i)) 
-                  ));
-  return (
-    any( prop('isSuccess'), results) ? Success(identity)
-      : Failure(["No conditions valid"]) // perhaps adding the failed conditions into the error structure
-  );
-}
-
-/*******************************************************************************
- * oneOf predicate   
- * Context.Cursor -> Validation
- */
-const oneOf = (ctx) => {
-  const [listOfSchemas, value] = getCurrent(ctx);
-  const results = listOfSchemas.map( (schema,i) => (
-                    validateContext(focusSchema(ctx,i)) 
-                  ));
-  const successResults = filter(prop('isSuccess'), results);
-  return (
-    successResults.length === 1 ? Success(identity)
-      : successResults.length === 0 ? Failure(["No conditions valid"]) 
-      : Failure(["More than one condition valid"])
-  );
-}
-
-/*******************************************************************************
- * properties predicate   
- * Context.Cursor -> Array Validation
- */
-const properties = (ctx) => {
-  const [propSchemas, value] = getCurrent(ctx);
-  return map((p) => validateContext(focus(ctx,p)), keysIn(propSchemas) );
-}
-
-
-const type = (ctx) => {
-  const [expected, value] = getCurrent(ctx);
-  
-  const actual    = typeOf(value)
-      , isinteger = (actual == 'number' && value === (value|0) )
-
-  const types = ('array' == typeOf(expected) ? expected : [expected]);
-  
-  const valid = ( indexOf(actual, types) >=0 ||
-                    (isinteger && indexOf('integer', types)>=0)
-                );
-  return valid ? Success(identity) 
-    : Failure([Err.Actual("Invalid type", ctx, actual)]) ;
-}
-
-/*******************************************************************************
- * Types 
- */
-
-const Context = Type({
-  Cursor: [map(isStringOrNumber), map(isStringOrNumber), T, T]
-});
-
-const focus = Context.caseOn({
-  Cursor: (spath,vpath,schema,value,key) => (
-    Context.Cursor(append(key,spath),  append(key,vpath), 
-                   path([key],schema), path([key],value))
-  )
-});
-
-const focusSchema = Context.caseOn({
-  Cursor: (spath,vpath,schema,value,key) => (
-    Context.Cursor(append(key,spath),  vpath, 
-                   path([key],schema), value)
-  )
-});
-
-const focusValue = Context.caseOn({
-  Cursor: (spath,vpath,schema,value,key) => (
-    Context.Cursor(spath,  append(vpath,key), 
-                   schema, path([key],value))
-  )
-});
-
-const getCurrent = Context.case({
-  Cursor: (spath,vpath,schema,value) => (
-    [ schema, value ]
-  )
-});
-
-
-const Predicate = Type({
-  allOf: [Context.Cursor],
-  anyOf: [Context.Cursor],
-  oneOf: [Context.Cursor],
-  properties: [Context.Cursor],
-  type: [Context.Cursor],
-  UNKNOWN: []
-});
-
-const evaluate = Predicate.case({
-  allOf, anyOf, oneOf, properties, type,
-  _: always(Success(identity))  // ignore unknown schema keys == always return success
-});
-
-
-const Err = Type({
-  Compound: [String, Context.Cursor, Array],   // message, context, array of Err
-  Actual:   [String, Context.Cursor, String],  // message, context, actual 
-});
-
-const errToString = Err.case({
-  Compound: (msg,ctx,errs) => {
-    const [spath,vpath,schema,value] = ctx;
-    const pathstr = vpath.length === 0 ? '' : vpath.join('/') + ': ';
-    return `${pathstr}${msg}: ${errs.length} of ${schema.length} failed`
-  },
-  Actual: (msg,ctx,actual) => {
-    const [spath,vpath,schema,value] = ctx;
-    const pathstr = vpath.length === 0 ? '' : vpath.join('/') + ': ';
-    return `${pathstr}${msg}: expected ${JSON.stringify(schema)}, was ${JSON.stringify(actual)}`;
-  }
-});
-
-module.exports = {validate, validateContext, errToString}
+module.exports = {validate, validateContext}
 

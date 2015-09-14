@@ -11,6 +11,8 @@
   "framework": "tap",
   "src_files": [
     "*.js",
+    "src/*.js",
+    "src/v4/*.js",
     "test/*.js"
   ],
   "serve_files": [

@@ -4,6 +4,7 @@ const test = require('tape');
 const Maybe = require('data.maybe');
 
 const v = require('../index');
+const e = require('../src/err');
 
 test('allOf', (assert) => {
 
@@ -18,7 +19,7 @@ test('allOf', (assert) => {
   
   const act2 = v.validate(schema, 1.1);
   assert.ok( act2.isFailure, "validation failed");
-  console.log( act2.fold(map(v.errToString), identity) );
+  console.log( act2.fold(map(e.toString), identity) );
 
   assert.end();
 });
@@ -38,7 +39,7 @@ test('properties', (assert) => {
   assert.ok( act.isSuccess, "validation succeeded");
   
   const act2 = v.validate(schema, {a: '1', b: '2', c: null});
-  console.log( act2.fold(map(v.errToString),identity) );
+  console.log( act2.fold(map(e.toString),identity) );
   assert.ok( act2.isFailure, "validation failed");
 
   assert.end();

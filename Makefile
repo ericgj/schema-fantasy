@@ -2,7 +2,7 @@
 browserify        = browserify
 babelify          = /usr/lib/node_modules/babelify
 BUILD_DIR         = .
-SOURCE_FILES      = index.js $(wildcard src/*.js)
+SOURCE_FILES      = index.js $(wildcard src/*.js) $(wildcard src/v4/*.js)
 TEST_SOURCE_FILES = $(wildcard test/*.js)
 SOURCE_ROOT       = index.js
 TEST_SOURCE_ROOT  = test/tests.js
