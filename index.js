@@ -1,4 +1,5 @@
 const curry = require('ramda/src/curry');
+const curryN = require('ramda/src/curryN');
 const chain = require('ramda/src/chain');
 const identity = require('ramda/src/identity');
 const compose = require('ramda/src/compose');
@@ -6,21 +7,28 @@ const reduce = require('ramda/src/reduce');
 const ap = require('ramda/src/ap');
 const map = require('ramda/src/map');
 const keysIn = require('ramda/src/keysIn');
-const allPass = require('ramda/src/allPass');
-const anyPass = require('ramda/src/anyPass');
+const all = require('ramda/src/all');
+const prop = require('ramda/src/prop');
+const any = require('ramda/src/any');
 const append = require('ramda/src/append');
 const path = require('ramda/src/path');
+const always = require('ramda/src/always');
+const T = require('ramda/src/T');
+
+const _type = require('ramda/src/type');
+const indexOf = require('ramda/src/indexOf');
 
 const Type = require('union-type');
 const Validation = require('data.validation');
 const Maybe = require('data.maybe');
 
-const Success = Success;
-const Failure = Failure;
+const Success = Validation.Success;
+const Failure = Validation.Failure;
 const Nothing = Maybe.Nothing;
 
 const flatten = chain(identity);
 const isStringOrNumber = (x) => typeof x === 'string' || typeof x === 'number'
+const typeOf = compose((t) => t.toLowerCase(), _type);
 
 /* future
 const allOf = require('./src/v4/allOf');
@@ -34,16 +42,20 @@ const oneOf = require('./src/v4/oneOf');
  * Validation result (or array of results) to the 'root' validation
  */
 const validate = curry( (schema, value) => (
-  ValidateContext( Context.Cursor([],[],schema,value) )
+  validateContext( Context.Cursor([],[],schema,value) )
 ));
 
-const validateContext = (ctx) => applyValidations(Success(Nothing), ctx)
-
-const applyValidations = curry( (root, ctx) => {
+const validateContext = (ctx) => {
   const [schema, value] = getCurrent(ctx);
   const evalPred = compose(evaluate, getPred(ctx));
-  return reduce( ap, root, flatten( map(evalPred, keysIn(schema)) ) );
-});
+  const valids = flatten( map(evalPred, keysIn(schema)) );
+  const root = valids.length == 0 ? Success(Nothing)
+                                  : Success(curryN(valids.length, Nothing));
+  return reduce( ap, root, valids );
+};
+
+
+module.exports = {validate, validateContext }
 
 
 /*******************************************************************************
@@ -64,10 +76,10 @@ const getPred = curry( (ctx, key) => {
 const allOf = (ctx) => {
   const [listOfSchemas, value] = getCurrent(ctx);
   const results = listOfSchemas.map( (schema,i) => (
-                    applyValidation(Success(Nothing), inSchema(ctx,i)) 
+                    validateContext(focusSchema(ctx,i)) 
                   ));
   return (
-    allPass(Validation.isSuccess, results) ? Success(identity)
+    all( prop('isSuccess'), results) ? Success(identity)
       : Failure(["Not all conditions valid"])   // perhaps adding the failed conditions into the error structure
   );
 };
@@ -79,10 +91,10 @@ const allOf = (ctx) => {
 const anyOf = (ctx) => {
   const [listOfSchemas, value] = getCurrent(ctx);
   const results = listOfSchemas.map( (schema,i) => (
-                    applyValidate(Success(Nothing), inSchema(ctx,i)) 
+                    validateContext(focusSchema(ctx,i)) 
                   ));
   return (
-    anyPass(Validation.isSuccess, results) ? Success(identity)
+    any( prop('isSuccess'), results) ? Success(identity)
       : Failure(["No conditions valid"]) // perhaps adding the failed conditions into the error structure
   );
 }
@@ -94,7 +106,7 @@ const anyOf = (ctx) => {
 const oneOf = (ctx) => {
   const [listOfSchemas, value] = getCurrent(ctx);
   const results = listOfSchemas.map( (schema,i) => (
-                    applyValidate(Success(Nothing), inSchema(ctx,i)) 
+                    validateContext(focusSchema(ctx,i)) 
                   ));
   const successResults = filter(Validation.isSuccess, results);
   return (
@@ -110,11 +122,23 @@ const oneOf = (ctx) => {
  */
 const properties = (ctx) => {
   const [propSchemas, value] = getCurrent(ctx);
-  return map((p) => (
-           applyValidate(Success(Nothing), focus(ctx,p)), keysIn(propSchemas)
-         ));
+  return map((p) => validateContext(focus(ctx,p)), keysIn(propSchemas) );
 }
 
+
+const type = (ctx) => {
+  const [expected, value] = getCurrent(ctx);
+  
+  const actual    = typeOf(value)
+      , isinteger = (actual == 'number' && value === (value|0) )
+
+  const types = ('array' == typeOf(expected) ? expected : [expected]);
+  
+  const valid = ( indexOf(actual, types) >=0 ||
+                    (isinteger && indexOf('integer', types)>=0)
+                );
+  return valid ? Success(identity) : Failure(["Invalid type"]) ;
+}
 
 /*******************************************************************************
  * Types 
@@ -151,11 +175,13 @@ const getCurrent = Context.case({
 const Predicate = Type({
   allOf: [Context.Cursor],
   anyOf: [Context.Cursor],
-  oneOf: [Context.Cursor]
+  oneOf: [Context.Cursor],
+  properties: [Context.Cursor],
+  type: [Context.Cursor]
 });
 
 const evaluate = Predicate.case({
-  allOf, anyOf, oneOf, properties,
+  allOf, anyOf, oneOf, properties, type,
   _: always(Success(identity))  // ignore unknown schema keys == always return success
 });
 
