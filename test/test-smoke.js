@@ -53,3 +53,15 @@ test('unknown predicate', (assert) => {
   assert.end();
 });
 
+test('empty schema', (assert) => {
+
+  const schema = {}
+  const act = v.validate(schema, false);
+  console.log( act.fold(identity, identity) );
+  assert.ok( act.isSuccess, "validation succeeded");
+  assert.ok( act.fold(()=> false, (x) => x.isNothing), "returns Nothing");
+
+  assert.end();
+
+});
+

@@ -49,7 +49,7 @@ const validateContext = (ctx) => {
   const [schema, value] = getCurrent(ctx);
   const evalPred = compose(evaluate, getPred(ctx));
   const valids = flatten( map(evalPred, keysIn(schema)) );
-  const root = valids.length === 0 ? Success(Nothing)
+  const root = valids.length === 0 ? Success(Nothing())
                                    : Success(curryN(valids.length, Nothing));
   return reduce( ap, root, valids );
 };
@@ -145,30 +145,33 @@ const type = (ctx) => {
  */
 
 const Context = Type({
-  Cursor: [map(isStringOrNumber), map(isStringOrNumber), Object, T]
+  Cursor: [map(isStringOrNumber), map(isStringOrNumber), T, T]
 });
 
 const focus = Context.caseOn({
   Cursor: (spath,vpath,schema,value,key) => (
-    Context.Cursor(append(key,spath), append(key,vpath), schema, value)
+    Context.Cursor(append(key,spath),  append(key,vpath), 
+                   path([key],schema), path([key],value))
   )
 });
 
 const focusSchema = Context.caseOn({
   Cursor: (spath,vpath,schema,value,key) => (
-    Context.Cursor(append(key,spath), vpath, schema, value)
+    Context.Cursor(append(key,spath),  vpath, 
+                   path([key],schema), value)
   )
 });
 
 const focusValue = Context.caseOn({
   Cursor: (spath,vpath,schema,value,key) => (
-    Context.Cursor(spath, append(vpath,key), schema, value)
+    Context.Cursor(spath,  append(vpath,key), 
+                   schema, path([key],value))
   )
 });
 
 const getCurrent = Context.case({
   Cursor: (spath,vpath,schema,value) => (
-    [ path(spath,schema), path(vpath,value) ]
+    [ schema, value ]
   )
 });
 
