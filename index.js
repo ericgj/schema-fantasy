@@ -15,6 +15,7 @@ const path = require('ramda/src/path');
 const always = require('ramda/src/always');
 const T = require('ramda/src/T');
 
+const filter = require('ramda/src/filter');
 const _type = require('ramda/src/type');
 const indexOf = require('ramda/src/indexOf');
 
@@ -55,8 +56,6 @@ const validateContext = (ctx) => {
 };
 
 
-module.exports = {validate, validateContext}
-
 
 /*******************************************************************************
  * Get predicate eval function from schema key and context
@@ -78,9 +77,10 @@ const allOf = (ctx) => {
   const results = listOfSchemas.map( (schema,i) => (
                     validateContext(focusSchema(ctx,i)) 
                   ));
+  const failResults = filter(prop('isFailure'), results);
   return (
-    all( prop('isSuccess'), results) ? Success(identity)
-      : Failure(["Not all conditions valid"])   // perhaps adding the failed conditions into the error structure
+    failResults.length === 0 ? Success(identity)
+      : Failure([Err.Compound("Not all conditions valid", ctx, failResults)])
   );
 };
 
@@ -108,7 +108,7 @@ const oneOf = (ctx) => {
   const results = listOfSchemas.map( (schema,i) => (
                     validateContext(focusSchema(ctx,i)) 
                   ));
-  const successResults = filter(Validation.isSuccess, results);
+  const successResults = filter(prop('isSuccess'), results);
   return (
     successResults.length === 1 ? Success(identity)
       : successResults.length === 0 ? Failure(["No conditions valid"]) 
@@ -137,7 +137,8 @@ const type = (ctx) => {
   const valid = ( indexOf(actual, types) >=0 ||
                     (isinteger && indexOf('integer', types)>=0)
                 );
-  return valid ? Success(identity) : Failure(["Invalid type"]) ;
+  return valid ? Success(identity) 
+    : Failure([Err.Actual("Invalid type", ctx, actual)]) ;
 }
 
 /*******************************************************************************
@@ -175,6 +176,7 @@ const getCurrent = Context.case({
   )
 });
 
+
 const Predicate = Type({
   allOf: [Context.Cursor],
   anyOf: [Context.Cursor],
@@ -190,4 +192,23 @@ const evaluate = Predicate.case({
 });
 
 
+const Err = Type({
+  Compound: [String, Context.Cursor, Array],   // message, context, array of Err
+  Actual:   [String, Context.Cursor, String],  // message, context, actual 
+});
+
+const errToString = Err.case({
+  Compound: (msg,ctx,errs) => {
+    const [spath,vpath,schema,value] = ctx;
+    const pathstr = vpath.length === 0 ? '' : vpath.join('/') + ': ';
+    return `${pathstr}${msg}: ${errs.length} of ${schema.length} failed`
+  },
+  Actual: (msg,ctx,actual) => {
+    const [spath,vpath,schema,value] = ctx;
+    const pathstr = vpath.length === 0 ? '' : vpath.join('/') + ': ';
+    return `${pathstr}${msg}: expected ${JSON.stringify(schema)}, was ${JSON.stringify(actual)}`;
+  }
+});
+
+module.exports = {validate, validateContext, errToString}
 

@@ -1,4 +1,5 @@
 const identity = require('ramda/src/identity');
+const map = require('ramda/src/map');
 const test = require('tape');
 const Maybe = require('data.maybe');
 
@@ -17,7 +18,7 @@ test('allOf', (assert) => {
   
   const act2 = v.validate(schema, 1.1);
   assert.ok( act2.isFailure, "validation failed");
-  console.log( act2.fold(identity, identity) );
+  console.log( act2.fold(map(v.errToString), identity) );
 
   assert.end();
 });
@@ -37,7 +38,7 @@ test('properties', (assert) => {
   assert.ok( act.isSuccess, "validation succeeded");
   
   const act2 = v.validate(schema, {a: '1', b: '2', c: null});
-  console.log( act2.fold(identity,identity) );
+  console.log( act2.fold(map(v.errToString),identity) );
   assert.ok( act2.isFailure, "validation failed");
 
   assert.end();
