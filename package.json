@@ -4,11 +4,7 @@
   "description": "JSON Schema validator from Fantasy Land",
   "main": "index.js",
   "scripts": {
-    "lint": "jshint index.js",
-    "test": "testem",
-    "test-build": "browserify test/tests.js --debug -t /usr/lib/node_modules/babelify --outfile test-build.js",
-    "prebuild": "npm run lint || true",
-    "build": "browserify index.js --debug -t /usr/lib/node_modules/babelify --outfile build.js"
+    "test": "testem"
   },
   "author": "Eric Gjertsen <ericgj72@gmail.com>",
   "license": "MIT",

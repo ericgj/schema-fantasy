@@ -1,5 +1,6 @@
 const identity = require('ramda/src/identity');
 const test = require('tape');
+const Maybe = require('data.maybe');
 
 const v = require('../index');
 
@@ -32,12 +33,23 @@ test('properties', (assert) => {
   };
 
   const act = v.validate(schema, {a: '1', b: 2, c: 3});
-  console.log( act.fold(identity,identity) );
+  console.log( act.fold(identity, (x) => x.isNothing) );
   assert.ok( act.isSuccess, "validation succeeded");
   
-  const act2 = v.validate(schema, {a: 1, b: '2', c: null});
+  const act2 = v.validate(schema, {a: '1', b: '2', c: null});
   console.log( act2.fold(identity,identity) );
   assert.ok( act2.isFailure, "validation failed");
 
   assert.end();
 });
+
+test('unknown predicate', (assert) => {
+  
+  const schema = { fantasy: 'foo' }
+
+  const act = v.validate(schema, {});
+  assert.ok( act.isSuccess, "validation succeeded");
+
+  assert.end();
+});
+

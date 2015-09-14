@@ -16,7 +16,7 @@
   "serve_files": [
     "test-build.js"
   ],
-  "before_tests": "npm run test-build",
+  "before_tests": "make test-build",
   "launch_in_dev": ["Node","TAP","PhantomJS"]
 
 }

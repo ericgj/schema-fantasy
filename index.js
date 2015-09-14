@@ -49,13 +49,13 @@ const validateContext = (ctx) => {
   const [schema, value] = getCurrent(ctx);
   const evalPred = compose(evaluate, getPred(ctx));
   const valids = flatten( map(evalPred, keysIn(schema)) );
-  const root = valids.length == 0 ? Success(Nothing)
-                                  : Success(curryN(valids.length, Nothing));
+  const root = valids.length === 0 ? Success(Nothing)
+                                   : Success(curryN(valids.length, Nothing));
   return reduce( ap, root, valids );
 };
 
 
-module.exports = {validate, validateContext }
+module.exports = {validate, validateContext}
 
 
 /*******************************************************************************
@@ -63,7 +63,7 @@ module.exports = {validate, validateContext }
  * getPred :: Context.Cursor c -> String k -> Predicate k c
  */
 const getPred = curry( (ctx, key) => {
-  if (!(key in Predicate)) return Predicate._;  // ehm...?
+  if (!(key in Predicate)) return Predicate.UNKNOWN();
   return Predicate[key](focusSchema(ctx,key)) ;
 });
 
@@ -177,7 +177,8 @@ const Predicate = Type({
   anyOf: [Context.Cursor],
   oneOf: [Context.Cursor],
   properties: [Context.Cursor],
-  type: [Context.Cursor]
+  type: [Context.Cursor],
+  UNKNOWN: []
 });
 
 const evaluate = Predicate.case({
