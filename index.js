@@ -19,9 +19,9 @@ var Failure = Validation.Failure;
 var Nothing = Maybe.Nothing;
 
 var context = require('./src/context')
-    , Context = context.Context;
+  , Context = context.Context;
 var predicate = require('./src/predicate')
-    , Predicate = predicate.Predicate;
+  , Predicate = predicate.Predicate;
 
 /*******************************************************************************
  * Validate
