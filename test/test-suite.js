@@ -12,7 +12,9 @@ var showSuccess = function(x){ return x.getOrElse("~~~ valid ~~~"); }
 
 var SUITE = {
   // additionalItems: require('./JSON-Schema-Test-Suite/tests/draft4/additionalItems.json'),
-  type: require('./JSON-Schema-Test-Suite/tests/draft4/type.json')
+  allOf: require('./JSON-Schema-Test-Suite/tests/draft4/allOf.json'),
+  type: require('./JSON-Schema-Test-Suite/tests/draft4/type.json'),
+  required: require('./JSON-Schema-Test-Suite/tests/draft4/required.json')
 };
 
 
