@@ -7,8 +7,8 @@ var test = require('tape');
 var err = require('../src/err');
 var validate = require('../index').validate;
 
-var showSuccess = function(x){ return x.getOrElse("~~~ valid ~~~"); }
-
+var showSuccess = function(x){ return x.getOrElse("(valid)\n~~~"); }
+var showFailure = function(xs){ return map(err.toString, xs).join("\n") + "\n~~~"; }
 
 var SUITE = {
   // additionalItems: require('./JSON-Schema-Test-Suite/tests/draft4/additionalItems.json'),
@@ -48,7 +48,7 @@ function singleTest(schema, expected){
   return function(assert){
     assert.plan(1);
     var actual = validate(schema, data);
-    console.log( "  " + actual.fold(map(err.toString), showSuccess) );
+    console.log( actual.fold(showFailure, showSuccess) );
 
     if (valid) { assert.ok( actual.isSuccess, "expected valid" ); }
     else       { assert.ok( actual.isFailure, "expected invalid" ); }

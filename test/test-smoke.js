@@ -76,3 +76,45 @@ test('empty schema', function(assert){
 
 });
 
+test('local ref', function(assert){
+
+  var schema = {
+    definitions: {
+      person: { type: 'object', required: ["name","pants-size"] }
+    },
+    properties: {
+      owner: { $ref: '#/definitions/person' }
+    }
+  }
+
+  var act = v.validate(schema, {owner: {name: 'Biggy', "pants-size": 44} });
+  console.log( act.fold(identity, identity) );
+  assert.ok( act.isSuccess, "validation succeeded");
+
+  var act2 = v.validate(schema, {owner: {name: 'Shy'}});
+  console.log( act2.fold(map(e.toString),identity) );
+  assert.ok( act2.isFailure, "validation failed");
+
+  assert.end();
+});
+  
+test('local ref at top level', function(assert){
+
+  var schema = {
+    definitions: {
+      person: { type: 'object', required: ["name","pants-size"] }
+    },
+    $ref: '#/definitions/person'
+  }
+
+  var act = v.validate(schema, {name: 'Biggy', "pants-size": 44});
+  console.log( act.fold(identity, identity) );
+  assert.ok( act.isSuccess, "validation succeeded");
+
+  var act2 = v.validate(schema, {name: 'Shy'});
+  console.log( act2.fold(map(e.toString),identity) );
+  assert.ok( act2.isFailure, "validation failed");
+
+  assert.end();
+});
+

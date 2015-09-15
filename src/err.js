@@ -48,7 +48,7 @@ var toString = Err.case({
       , schema = cur[0], value = cur[1];
     var curpath = context.getCurrentPath(ctx)
       , spath = curpath[0], vpath = curpath[1];
-    var pathstr = vpath.length === 0 ? '' : vpath.join('/') + ': ';
+    var pathstr = vpath.join('/');
     return compact([pathstr, 
                     msg, 
                     "expected " + exp + ", was " + act

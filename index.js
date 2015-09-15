@@ -29,7 +29,7 @@ var predicate = require('./src/predicate')
  * Validation result (or array of results) to the 'root' validation
  */
 var validate = curry( function validate(schema, value){
-  return validateContext( Context.Cursor([],[],schema,value) )
+  return validateContext( context.init(schema,value) )
 });
 
 function validateContext(ctx){
