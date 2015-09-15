@@ -1,23 +1,25 @@
-const identity = require('ramda/src/identity');
-const chain = require('ramda/src/chain');
-const filter = require('ramda/src/filter');
-const map = require('ramda/src/map');
-const prop = require('ramda/src/prop');
+'use strict';
+var identity = require('ramda/src/identity');
+var chain = require('ramda/src/chain');
+var filter = require('ramda/src/filter');
+var map = require('ramda/src/map');
+var prop = require('ramda/src/prop');
 
-const Validation = require('data.validation')
+var Validation = require('data.validation')
     , Success = Validation.Success
     , Failure = Validation.Failure
 
-const context = require('../context');
-const Err = require('../err').Err;
+var context = require('../context');
+var Err = require('../err').Err;
+function getError(v){ return v.orElse(identity); }
 
 module.exports = function allOf(validate,ctx){
-  const [listOfSchemas, value] = context.getCurrent(ctx);
-  const results = listOfSchemas.map( (schema,i) => (
-                    validate(context.focusSchema(ctx,i)) 
-                  ));
-  const failResults = filter(prop('isFailure'), results);
-  const failErrs = chain((v) => v.orElse(identity), failResults);
+  var listOfSchemas = context.getCurrent(ctx)[0];
+  var results = listOfSchemas.map( function(schema,i){
+                  return validate(context.focusSchema(ctx,i)) ;
+                });
+  var failResults = filter(prop('isFailure'), results);
+  var failErrs = chain(getError, failResults);
 
   return (
     failResults.length === 0 ? Success(identity)

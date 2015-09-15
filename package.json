@@ -22,8 +22,13 @@
     "source-map-support": "^0.3.2"
   },
   "jshintConfig": {
-    "esnext": true,
+    "globalstrict": true,
+    "newcap": false,
     "asi": true,
-    "laxcomma": true
+    "laxcomma": true,
+    "globals": {
+      "module": true,
+      "require": true
+    }
   }
 }

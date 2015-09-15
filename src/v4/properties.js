@@ -1,11 +1,13 @@
-const map = require('ramda/src/map');
-const keysIn = require('ramda/src/keysIn');
+'use strict';
+var map = require('ramda/src/map');
+var keysIn = require('ramda/src/keysIn');
 
-const context = require('../context');
+var context = require('../context');
 
 module.exports = function properties(validate,ctx){
-  const [propSchemas, value] = context.getCurrent(ctx);
-  return map((p) => validate(context.focus(ctx,p)), keysIn(propSchemas) );
+  var propSchemas = context.getCurrent(ctx)[0];
+  return map(function(p){ return validate(context.focus(ctx,p)); }, 
+             keysIn(propSchemas) );
 }
 
 

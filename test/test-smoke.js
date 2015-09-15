@@ -1,37 +1,41 @@
-const identity = require('ramda/src/identity');
-const map = require('ramda/src/map');
-const test = require('tape');
-const Maybe = require('data.maybe');
+/* globals console: true */
+'use strict';
+var identity = require('ramda/src/identity');
+var prop = require('ramda/src/prop');
+var F = require('ramda/src/F');
+var map = require('ramda/src/map');
+var test = require('tape');
+var Maybe = require('data.maybe');
 
-const v = require('../index');
-const e = require('../src/err');
+var v = require('../index');
+var e = require('../src/err');
 
-test('allOf', (assert) => {
+test('allOf', function(assert){
 
-  const schema = {
+  var schema = {
     allOf: [
       { type: 'integer' },
       { type: 'number'  }
     ]
   }
 
-  const act = v.validate(schema, 1);
+  var act = v.validate(schema, 1);
   assert.ok( act.isSuccess, "validation succeeded");
   
-  const act2 = v.validate(schema, 1.1);
+  var act2 = v.validate(schema, 1.1);
   assert.ok( act2.isFailure, "validation failed");
   console.log( act2.fold(map(e.toString), identity) );
 
-  const act3 = v.validate(schema, "1");
+  var act3 = v.validate(schema, "1");
   assert.ok( act3.isFailure, "validation failed");
   console.log( act3.fold(map(e.toString), identity) );
 
   assert.end();
 });
 
-test('properties', (assert) => {
+test('properties', function(assert){
 
-  const schema = {
+  var schema = {
     properties: {
       a: { type: 'string' },
       b: { type: 'number' },
@@ -39,34 +43,34 @@ test('properties', (assert) => {
     }
   };
 
-  const act = v.validate(schema, {a: '1', b: 2, c: 3});
-  console.log( act.fold(identity, (x) => x.isNothing) );
+  var act = v.validate(schema, {a: '1', b: 2, c: 3});
+  console.log( act.fold(identity, prop('isNothing')) );
   assert.ok( act.isSuccess, "validation succeeded");
   
-  const act2 = v.validate(schema, {a: '1', b: '2', c: null});
+  var act2 = v.validate(schema, {a: '1', b: '2', c: null});
   console.log( act2.fold(map(e.toString),identity) );
   assert.ok( act2.isFailure, "validation failed");
 
   assert.end();
 });
 
-test('unknown predicate', (assert) => {
+test('unknown predicate', function(assert){
   
-  const schema = { fantasy: 'foo' }
+  var schema = { fantasy: 'foo' }
 
-  const act = v.validate(schema, {});
+  var act = v.validate(schema, {});
   assert.ok( act.isSuccess, "validation succeeded");
 
   assert.end();
 });
 
-test('empty schema', (assert) => {
+test('empty schema', function(assert){
 
-  const schema = {}
-  const act = v.validate(schema, false);
+  var schema = {}
+  var act = v.validate(schema, false);
   console.log( act.fold(identity, identity) );
   assert.ok( act.isSuccess, "validation succeeded");
-  assert.ok( act.fold(()=> false, (x) => x.isNothing), "returns Nothing");
+  assert.ok( act.fold(F, prop('isNothing')), "returns Nothing");
 
   assert.end();
 

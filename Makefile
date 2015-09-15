@@ -1,6 +1,5 @@
 
 browserify        = browserify
-babelify          = /usr/lib/node_modules/babelify
 BUILD_DIR         = .
 SOURCE_FILES      = index.js $(wildcard src/*.js) $(wildcard src/v4/*.js)
 TEST_SOURCE_FILES = $(wildcard test/*.js)
@@ -16,10 +15,10 @@ lint:
 	@jshint $(SOURCE_FILES) $(TEST_SOURCE_FILES) || true
 
 $(BUILD_DIR)/build.js: $(SOURCE_FILES)
-	$(browserify) $(SOURCE_ROOT) --debug -t $(babelify) --outfile $@
+	$(browserify) $(SOURCE_ROOT) --debug --outfile $@
 
 $(BUILD_DIR)/test-build.js: $(SOURCE_FILES) $(TEST_SOURCE_FILES)
-	browserify $(TEST_SOURCE_ROOT) --debug -t $(babelify) --outfile $@
+	browserify $(TEST_SOURCE_ROOT) --debug --outfile $@
 
 clean:
 	rm $(BUILD_DIR)/build.js $(BUILD_DIR)/test-build.js

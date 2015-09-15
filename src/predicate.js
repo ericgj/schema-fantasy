@@ -1,18 +1,19 @@
-const always = require('ramda/src/always');
-const identity = require('ramda/src/identity');
-const Type = require('union-type');
-const Validation = require('data.validation')
-    , Success = Validation.Success
+'use strict';
+var always = require('ramda/src/always');
+var identity = require('ramda/src/identity');
+var Type = require('union-type');
+var Validation = require('data.validation')
+  , Success = Validation.Success
 
-const Context = require('./context').Context;
+var Context = require('./context').Context;
 
-const allOf = require('./v4/allOf');
-const anyOf = require('./v4/anyOf');
-const oneOf = require('./v4/oneOf');
-const properties = require('./v4/properties');
-const type  = require('./v4/type');
+var allOf = require('./v4/allOf');
+var anyOf = require('./v4/anyOf');
+var oneOf = require('./v4/oneOf');
+var properties = require('./v4/properties');
+var type  = require('./v4/type');
 
-const Predicate = Type({
+var Predicate = Type({
   allOf: [Function, Context.Cursor],
   anyOf: [Function, Context.Cursor],
   oneOf: [Function, Context.Cursor],
@@ -21,9 +22,13 @@ const Predicate = Type({
   UNKNOWN: []
 });
 
-const evaluate = Predicate.case({
-  allOf, anyOf, oneOf, properties, type,
+var evaluate = Predicate.case({
+  allOf: allOf, 
+  anyOf: anyOf, 
+  oneOf: oneOf, 
+  properties: properties, 
+  type: type,
   _: always(Success(identity))  // ignore unknown schema keys == always return success
 });
 
-module.exports = {Predicate, evaluate}
+module.exports = {Predicate: Predicate, evaluate: evaluate}

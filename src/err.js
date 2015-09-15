@@ -1,45 +1,61 @@
-const filter = require('ramda/src/filter');
-const map = require('ramda/src/map');
-const compose = require('ramda/src/compose');
-const not = require('ramda/src/not');
-const isEmpty = require('ramda/src/isEmpty');
+'use strict';
+var filter = require('ramda/src/filter');
+var map = require('ramda/src/map');
+var compose = require('ramda/src/compose');
+var not = require('ramda/src/not');
+var isEmpty = require('ramda/src/isEmpty');
 
-const Type = require('union-type');
+var Type = require('union-type');
 
-const Context = require('./context').Context;
+var context = require('./context')
+  , Context = context.Context;
 
-const compact = filter(compose(not, isEmpty));
+var compact = filter(compose(not, isEmpty));
 
-const Err = Type({
+var Err = Type({
   Single:   [String, Context.Cursor],          // message, context
   Compound: [String, Context.Cursor, Array],   // message, context, array of Err
-  Values:   [String, Context.Cursor, String, String],  // message, context, expected, actual 
+  Values:   [String, Context.Cursor, String, String]  // message, context, expected, actual 
 });
 
-const toString = Err.case({
+var toString = Err.case({
   
-  Single: (msg,ctx) => {
-    const [spath,vpath,schema,value] = ctx;
-    const pathstr = vpath.join('/');
+  Single: function toStringSingle(msg,ctx){
+    var cur = context.getCurrent(ctx)
+      , schema = cur[0], value = cur[1];
+    var curpath = context.getCurrentPath(ctx)
+      , spath = curpath[0], vpath = curpath[1];
+    var pathstr = vpath.join('/');
     return compact([pathstr, msg]).join(': ');
   },
 
-  Compound: (msg,ctx,errs) => {
-    const [spath,vpath,schema,value] = ctx;
-    const countstr = [errs.length, errs.length === 1 ? "error" : "errors", "found"].join(" "); 
-    const pathstr = vpath.join('/');
-    const msgs = map(toString, errs);
+  Compound: function toStringCompound(msg,ctx,errs){
+    var cur = context.getCurrent(ctx)
+      , schema = cur[0], value = cur[1];
+    var curpath = context.getCurrentPath(ctx)
+      , spath = curpath[0], vpath = curpath[1];
+    var countstr = [errs.length, errs.length === 1 ? "error" : "errors",
+                    "found"].join(" "); 
+    var pathstr = vpath.join('/');
+    var msgs = map(toString, errs);
     return [ compact([pathstr, msg, countstr]).join(': '), 
              msgs.join("\n")
            ].join("\n");
   },
 
-  Values: (msg,ctx,exp,act) => {
-    const [spath,vpath,schema,value] = ctx;
-    const pathstr = vpath.length === 0 ? '' : vpath.join('/') + ': ';
-    return compact([pathstr, msg, "expected " + exp + ", was " + act]).join(': ');
+  Values: function toStringValues(msg,ctx,exp,act){
+    var cur = context.getCurrent(ctx)
+      , schema = cur[0], value = cur[1];
+    var curpath = context.getCurrentPath(ctx)
+      , spath = curpath[0], vpath = curpath[1];
+    var pathstr = vpath.length === 0 ? '' : vpath.join('/') + ': ';
+    return compact([pathstr, 
+                    msg, 
+                    "expected " + exp + ", was " + act
+                   ]).join(': ');
   }
 
 });
 
-module.exports = {Err, toString}
+module.exports = {Err: Err, toString: toString}
+
