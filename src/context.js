@@ -1,4 +1,3 @@
-/* globals URL:true */
 'use strict';
 var map = require('ramda/src/map');
 var append = require('ramda/src/append');
@@ -6,48 +5,24 @@ var path = require('ramda/src/path');
 var T = require('ramda/src/T');
 var Type = require('union-type');
 
+var url = require('./url');
+
 function isStringOrNumber(x){
   return typeof x === 'string' || typeof x === 'number' ;
 }
 
-var urllib, parseURL, dumpURL
-
-// for Node.js
-if (typeof URL == 'undefined'){ 
-  urllib = require('url');
-  parseURL = urllib.parse;
-  dumpURL  = urllib.format;
-} else {
-  parseURL = function(str){ return new URL(str); }
-  dumpURL  = function(url){ return url.toString(); }
-}
-
-function canonicalURL(url){
-  return dumpURL(parseURL(url));
-}
-
-// TODO maybe there is a better way?
-function isLocalPathRef(url){
-  return url === parseURL(url).hash;
-}
-
-// TODO note this assumes the hash will start with '/'
-function getDocumentAndPath(ref){
-  var parts = ref.split('#')
-  return [ parts[0], (parts[1] || '').split('/').slice(1) ];
-}
-
+// Note: refs must have normalized url keys
 function resolveRef(refs,spath,schema,cyc){
   cyc = cyc || {}
   var cur = path(spath,schema);
   if (typeof cur == 'object' && '$ref' in cur){
-    var ref = canonicalURL(cur['$ref'])
-      , parts = getDocumentAndPath(ref)
+    var ref = url.resolveTo(schema, cur['$ref'])
+      , parts = url.getDocAndPath(ref)
       , refdoc = parts[0], refpath = parts[1]; 
 
     if (ref in cyc){
       throw new Error("Cyclical reference detected: " + ref);
-    } else if (isLocalPathRef(ref)){
+    } else if (url.isLocalTo(schema, ref)){
       cyc[ref] = true;
       return resolveRef(refs, refpath, schema, cyc);
     } else if (refdoc in refs){

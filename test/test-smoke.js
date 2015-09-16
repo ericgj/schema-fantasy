@@ -157,6 +157,40 @@ test('remote ref', function(assert){
   assert.end();
 });
 
+
+test('relative refs', function(assert){
+
+  var schema = {
+    id: 'http://fake-school.edu/schema/student',
+    properties: {
+      grade: { $ref: 'value-types#/definitions/grade' }
+    },
+    required: ['grade']
+  }
+
+  var schema2 = {
+    definitions: {
+      grade: { type: ['number','string'], enum: [4,3,2,1,'U','NA'] }
+    }
+  }
+
+  var cache = {
+    'http://fake-school.edu/schema/student': schema,
+    'http://fake-school.edu/schema/value-types': schema2
+  }
+
+  var act = v.validate(cache, schema, {grade: 'U'}); 
+  console.log( act.fold(identity, identity) );
+  assert.ok( act.isSuccess, "validation succeeded");
+
+  var act2 = v.validate(cache, schema, {grade: 'none'});
+  console.log( act2.fold(map(e.toString),identity) );
+  assert.ok( act2.isFailure, "validation failed");
+
+  assert.end();
+});
+
+
 test('cyclical refs should throw', function(assert){
 
   var schemaA = {

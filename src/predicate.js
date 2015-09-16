@@ -9,6 +9,7 @@ var Context = require('./context').Context;
 
 var allOf = require('./v4/allOf');
 var anyOf = require('./v4/anyOf');
+var _enum = require('./v4/enum');
 var oneOf = require('./v4/oneOf');
 var properties = require('./v4/properties');
 var required = require('./v4/required');
@@ -17,6 +18,7 @@ var type  = require('./v4/type');
 var Predicate = Type({
   allOf: [Function, Context.Cursor],
   anyOf: [Function, Context.Cursor],
+  enum: [Context.Cursor],
   oneOf: [Function, Context.Cursor],
   properties: [Function, Context.Cursor],
   required: [Context.Cursor],
@@ -27,6 +29,7 @@ var Predicate = Type({
 var evaluate = Predicate.case({
   allOf: allOf, 
   anyOf: anyOf, 
+  enum: _enum,
   oneOf: oneOf, 
   properties: properties, 
   required: required,
