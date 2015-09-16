@@ -6,44 +6,77 @@ var path = require('ramda/src/path');
 var T = require('ramda/src/T');
 var Type = require('union-type');
 
-if (typeof URL == 'undefined'){ var URL = require('url').parse; }
-
 function isStringOrNumber(x){
   return typeof x === 'string' || typeof x === 'number' ;
 }
 
-// quick and dirty for the moment
+var urllib, parseURL, dumpURL
+
+// for Node.js
+if (typeof URL == 'undefined'){ 
+  urllib = require('url');
+  parseURL = urllib.parse;
+  dumpURL  = urllib.format;
+} else {
+  parseURL = function(str){ return new URL(str); }
+  dumpURL  = function(url){ return url.toString(); }
+}
+
+function canonicalURL(url){
+  return dumpURL(parseURL(url));
+}
+
+// TODO maybe there is a better way?
 function isLocalPathRef(url){
-  return url === new URL(url).hash;
+  return url === parseURL(url).hash;
 }
 
-function splitLocalPathRef(url){
-  return new URL(url).hash.split('/').slice(1);  // remove the hash
+// TODO note this assumes the hash will start with '/'
+function getDocumentAndPath(ref){
+  var parts = ref.split('#')
+  return [ parts[0], (parts[1] || '').split('/').slice(1) ];
 }
 
-function resolveRefPath(spath,schema){
+function resolveRef(refs,spath,schema,cyc){
+  cyc = cyc || {}
   var cur = path(spath,schema);
   if (typeof cur == 'object' && '$ref' in cur){
-    var ref = cur['$ref'];
-    if (isLocalPathRef(ref)){
-      return resolveRefPath(splitLocalPathRef(ref),schema);  // follow refs recursively 
+    var ref = canonicalURL(cur['$ref'])
+      , parts = getDocumentAndPath(ref)
+      , refdoc = parts[0], refpath = parts[1]; 
+
+    if (ref in cyc){
+      throw new Error("Cyclical reference detected: " + ref);
+    } else if (isLocalPathRef(ref)){
+      cyc[ref] = true;
+      return resolveRef(refs, refpath, schema, cyc);
+    } else if (refdoc in refs){
+      cyc[ref] = true;
+      return resolveRef(refs, refpath, refs[refdoc], cyc);
+    } else {
+      throw new Error("Unknown resource: " + refdoc);  // TODO replace with Either.Left?
     }
   }
-  return spath;
+  return [spath,schema];
 }
+
+
+
 
 /***
  * Initialize cursor at top of given schema and value
  * Note you should use this instead of calling Context.Cursor directly,
  *   in case top-level schema is a $ref
  */
-var init = function init(schema,value){
-  return Context.Cursor(resolveRefPath([],schema),[],schema,value);
+var init = function init(refs,schema,value){
+  var resolved = resolveRef(refs,[],schema)
+    , rpath = resolved[0], rschema = resolved[1];
+  return Context.Cursor(refs, rpath, [], rschema, value);
 }
 
 
 var Context = Type({
-  Cursor: [map(isStringOrNumber), map(isStringOrNumber), T, T]
+  Cursor: [Object, map(isStringOrNumber), map(isStringOrNumber), T, T]
 });
 
 
@@ -52,10 +85,15 @@ var Context = Type({
  * Note that entire schema is retained across contexts, while value is not.
  */
 var focus = Context.caseOn({
-  Cursor: function focusCursor(spath,vpath,schema,value,key){
-    var newspath = append(key,spath), newvpath = append(key,vpath);
-    return Context.Cursor(resolveRefPath(newspath,schema),  newvpath, 
-                          schema,                           path([key],value)) ;
+  Cursor: function focusCursor(refs,spath,vpath,schema,value,key){
+    var newspath = append(key,spath), newvpath = append(key,vpath)
+      , newvalue = path([key],value);
+    var resolved = resolveRef(refs,newspath,schema)
+      , rpath = resolved[0], rschema = resolved[1];
+
+    return Context.Cursor(refs,
+                          rpath,   newvpath, 
+                          rschema, newvalue) ;
   }
 });
 
@@ -63,10 +101,14 @@ var focus = Context.caseOn({
  * Focus on key of schema for current value
  */
 var focusSchema = Context.caseOn({
-  Cursor: function focusSchemaCursor(spath,vpath,schema,value,key){
+  Cursor: function focusSchemaCursor(refs,spath,vpath,schema,value,key){
     var newspath = append(key,spath);
-    return Context.Cursor(resolveRefPath(newspath,schema),  vpath, 
-                          schema,                           value) ;
+    var resolved = resolveRef(refs,newspath,schema)
+      , rpath = resolved[0], rschema = resolved[1];
+
+    return Context.Cursor(refs,
+                          rpath,   vpath, 
+                          rschema, value) ;
   }
 });
 
@@ -75,8 +117,9 @@ var focusSchema = Context.caseOn({
  * Note I don't think this is used and can be removed
  */
 var focusValue = Context.caseOn({
-  Cursor: function focusValueCursor(spath,vpath,schema,value,key){
-    return Context.Cursor(spath,  append(vpath,key), 
+  Cursor: function focusValueCursor(refs,spath,vpath,schema,value,key){
+    return Context.Cursor(refs,
+                          spath,  append(vpath,key), 
                           schema, path([key],value)) ;
   }
 });
@@ -85,7 +128,7 @@ var focusValue = Context.caseOn({
  * Get current schema and value
  */
 var getCurrent = Context.case({
-  Cursor: function getCurrentCursor(spath,vpath,schema,value){
+  Cursor: function getCurrentCursor(refs,spath,vpath,schema,value){
     // console.log('~~~~~' + JSON.stringify([spath,vpath]));
     return [ path(spath,schema), value ];
   }
@@ -95,7 +138,7 @@ var getCurrent = Context.case({
  * Get current schema path and value path, not resolving refs
  */
 var getCurrentPath = Context.case({
-  Cursor: function getCurrentPathCursor(spath,vpath,schema,value){
+  Cursor: function getCurrentPathCursor(refs,spath,vpath,schema,value){
     return [ spath, vpath ];
   }
 });

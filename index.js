@@ -24,14 +24,28 @@ var predicate = require('./src/predicate')
   , Predicate = predicate.Predicate;
 
 /*******************************************************************************
- * Validate
+ * ValidateIn
+ * Validate within schema (no external refs)
+ */
+var validateIn = curry( function validateIn(schema, value){
+  return validate({},schema,value);
+});
+
+/*******************************************************************************
+ * validate
+ * Validate (including specified external refs table)
+ */
+var validate = curry( function validate(refs, schema, value){
+  refs = refs || {};
+  return validateContext( context.init(refs,schema,value) );
+});
+
+/*******************************************************************************
+ * validateContext
+ * The basic validation algorithm.
  * Evaluate each predicate function on given context, and then apply each 
  * Validation result (or array of results) to the 'root' validation
  */
-var validate = curry( function validate(schema, value){
-  return validateContext( context.init(schema,value) )
-});
-
 function validateContext(ctx){
   var schema = context.getCurrent(ctx)[0];
   var evalPred = compose(predicate.evaluate, getPred(ctx));
@@ -42,9 +56,10 @@ function validateContext(ctx){
 }
 
 /*******************************************************************************
+ * getPred
  * Get predicate eval function from schema key and context
- * getPred :: Context.Cursor c -> String k -> Predicate k c   
- *  or     :: Context.Cursor c -> String k -> Predicate k Function c
+ *     Context.Cursor c -> String k -> Predicate k c   
+ *  or Context.Cursor c -> String k -> Predicate k Function c
  */
 var getPred = curry( function getPred(ctx, key){
   if (!(key in Predicate)) return Predicate.UNKNOWN();
@@ -57,5 +72,9 @@ var getPred = curry( function getPred(ctx, key){
 });
 
 
-module.exports = {validate: validate, validateContext: validateContext}
+module.exports = {
+  validate: validate,
+  validateIn: validateIn,
+  validateContext: validateContext
+}
 

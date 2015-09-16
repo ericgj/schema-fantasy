@@ -5,7 +5,8 @@ var map = require('ramda/src/map');
 var test = require('tape');
 
 var err = require('../src/err');
-var validate = require('../index').validate;
+var v = require('../index')
+  , validateIn = v.validateIn;
 
 var showSuccess = function(x){ return x.getOrElse("(valid)\n~~~"); }
 var showFailure = function(xs){ return map(err.toString, xs).join("\n") + "\n~~~"; }
@@ -47,7 +48,7 @@ function singleTest(schema, expected){
   var valid = expected.valid;
   return function(assert){
     assert.plan(1);
-    var actual = validate(schema, data);
+    var actual = validateIn(schema, data);
     console.log( actual.fold(showFailure, showSuccess) );
 
     if (valid) { assert.ok( actual.isSuccess, "expected valid" ); }

@@ -19,14 +19,14 @@ test('allOf', function(assert){
     ]
   }
 
-  var act = v.validate(schema, 1);
+  var act = v.validateIn(schema, 1);
   assert.ok( act.isSuccess, "validation succeeded");
   
-  var act2 = v.validate(schema, 1.1);
+  var act2 = v.validateIn(schema, 1.1);
   assert.ok( act2.isFailure, "validation failed");
   console.log( act2.fold(map(e.toString), identity) );
 
-  var act3 = v.validate(schema, "1");
+  var act3 = v.validateIn(schema, "1");
   assert.ok( act3.isFailure, "validation failed");
   console.log( act3.fold(map(e.toString), identity) );
 
@@ -43,11 +43,11 @@ test('properties', function(assert){
     }
   };
 
-  var act = v.validate(schema, {a: '1', b: 2, c: 3});
+  var act = v.validateIn(schema, {a: '1', b: 2, c: 3});
   console.log( act.fold(identity, prop('isNothing')) );
   assert.ok( act.isSuccess, "validation succeeded");
   
-  var act2 = v.validate(schema, {a: '1', b: '2', c: null});
+  var act2 = v.validateIn(schema, {a: '1', b: '2', c: null});
   console.log( act2.fold(map(e.toString),identity) );
   assert.ok( act2.isFailure, "validation failed");
 
@@ -58,7 +58,7 @@ test('unknown predicate', function(assert){
   
   var schema = { fantasy: 'foo' }
 
-  var act = v.validate(schema, {});
+  var act = v.validateIn(schema, {});
   assert.ok( act.isSuccess, "validation succeeded");
 
   assert.end();
@@ -67,7 +67,7 @@ test('unknown predicate', function(assert){
 test('empty schema', function(assert){
 
   var schema = {}
-  var act = v.validate(schema, false);
+  var act = v.validateIn(schema, false);
   console.log( act.fold(identity, identity) );
   assert.ok( act.isSuccess, "validation succeeded");
   assert.ok( act.fold(F, prop('isNothing')), "returns Nothing");
@@ -87,11 +87,11 @@ test('local ref', function(assert){
     }
   }
 
-  var act = v.validate(schema, {owner: {name: 'Biggy', "pants-size": 44} });
+  var act = v.validateIn(schema, {owner: {name: 'Biggy', "pants-size": 44} });
   console.log( act.fold(identity, identity) );
   assert.ok( act.isSuccess, "validation succeeded");
 
-  var act2 = v.validate(schema, {owner: {name: 'Shy'}});
+  var act2 = v.validateIn(schema, {owner: {name: 'Shy'}});
   console.log( act2.fold(map(e.toString),identity) );
   assert.ok( act2.isFailure, "validation failed");
 
@@ -107,14 +107,88 @@ test('local ref at top level', function(assert){
     $ref: '#/definitions/person'
   }
 
-  var act = v.validate(schema, {name: 'Biggy', "pants-size": 44});
+  var act = v.validateIn(schema, {name: 'Biggy', "pants-size": 44});
   console.log( act.fold(identity, identity) );
   assert.ok( act.isSuccess, "validation succeeded");
 
-  var act2 = v.validate(schema, {name: 'Shy'});
+  var act2 = v.validateIn(schema, {name: 'Shy'});
   console.log( act2.fold(map(e.toString),identity) );
   assert.ok( act2.isFailure, "validation failed");
 
   assert.end();
 });
+
+
+test('remote ref', function(assert){
+
+  
+  var schema = {
+    properties: {
+      'bake-time': { type: 'number' }
+    },
+    allOf: [ { $ref: 'http://fruitbreads-of-the-world.com/schemas#/definitions/recipe' } ]
+  }
+
+  var refschema = {
+    definitions: {
+      recipe: {
+        required: ["ingredients"],
+        properties: {
+          ingredients: { type: "array" }
+        }
+      }
+    }
+  }
+
+  var cache = {
+    'http://fruitbreads-of-the-world.com/schemas': refschema
+  }
+  
+  var act = v.validate(cache, schema, 
+                       {'name': 'plum torte', 'bake-time': 45, 'ingredients': [] });
+  console.log( act.fold(identity, identity) );
+  assert.ok( act.isSuccess, "validation succeeded");
+
+  var act2 = v.validate(cache, schema, 
+                        {'name': 'flopbread', 'bake-time': '1 hr or so'  });
+  console.log( act2.fold(map(e.toString),identity) );
+  assert.ok( act2.isFailure, "validation failed");
+
+  assert.end();
+});
+
+test('cyclical refs should throw', function(assert){
+
+  var schemaA = {
+    properties: {
+      B: { $ref: 'http://B/schema#/properties/C' }
+    }
+  };
+
+  var schemaB = {
+    properties: {
+      C: { $ref: 'http://C/schema#/properties/A' }
+    }
+  };
+
+  var schemaC = {
+    properties: {
+      A: { $ref: 'http://A/schema#/properties/B' }
+    }
+  };
+
+  var cache = {
+    'http://a/schema': schemaA,
+    'http://b/schema': schemaB,
+    'http://c/schema': schemaC
+  };
+
+  assert.throws( function(){ return v.validate(cache, schemaA, {}); } );
+  assert.throws( function(){ return v.validate(cache, schemaB, {}); } );
+  assert.throws( function(){ return v.validate(cache, schemaC, {}); } );
+
+  assert.end();
+
+});
+
 
