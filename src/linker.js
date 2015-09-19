@@ -17,8 +17,7 @@ var flip = require('ramda/src/flip');
 var Type = require('union-type');
 var Task = require('data.task');
 
-// note: not sure what node lib to use yet
-// if (typeof fetch == 'undefined') var fetch = require('node-fetch');
+if (typeof fetch == 'undefined') var fetch = require('node-fetch');
 
 var url = require('./url');
 

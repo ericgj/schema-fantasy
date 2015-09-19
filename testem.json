@@ -1,11 +1,11 @@
 {
   "launchers": {
     "Node": {
-      "command": "node test-build.js",
+      "command": "node test/tests.js",
       "protocol": "tap"
     },
     "TAP": {
-      "command": "node test-build.js"
+      "command": "node test/tests.js"
     }
   },
   "framework": "tap",
