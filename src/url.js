@@ -4,8 +4,12 @@ function normalize(u){
   return url.format(url.parse(u));
 }
 
+function resolve(u1,u2){
+  return url.resolve(normalize(u1), normalize(u2));
+}
+
 function resolveTo(schema,u){
-  return schema.id ? url.resolve(normalize(schema.id), normalize(u)) 
+  return schema.id ? resolve(schema.id, u) 
                    : normalize(u);
 }
 
@@ -16,14 +20,20 @@ function isLocalTo(schema,u){
 }
 
 // TODO note this assumes the hash will start with '/'
-function getDocAndPath(u){
+function getBaseAndPath(u){
   var parts = normalize(u).split('#');
   return [ parts[0], (parts[1] || '').split('/').slice(1) ];
 }
 
+function getBase(u){ return getBaseAndPath(u)[0]; }
+function getPath(u){ return getBaseAndPath(u)[1]; }
+
 module.exports = {
   normalize: normalize,
+  resolve: resolve,
   resolveTo: resolveTo,
   isLocalTo: isLocalTo,
-  getDocAndPath: getDocAndPath
+  getBaseAndPath: getBaseAndPath,
+  getBase: getBase,
+  getPath: getPath
 };

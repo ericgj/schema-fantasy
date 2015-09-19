@@ -17,7 +17,7 @@ function resolveRef(refs,spath,schema,cyc){
   var cur = path(spath,schema);
   if (typeof cur == 'object' && '$ref' in cur){
     var ref = url.resolveTo(schema, cur['$ref'])
-      , parts = url.getDocAndPath(ref)
+      , parts = url.getBaseAndPath(ref)
       , refdoc = parts[0], refpath = parts[1]; 
 
     if (ref in cyc){
