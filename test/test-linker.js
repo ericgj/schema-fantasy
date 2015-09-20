@@ -2,6 +2,8 @@
 'use strict';
 var compose = require('ramda/src/compose');
 var map = require('ramda/src/map');
+var flip = require('ramda/src/flip');
+var prop = require('ramda/src/prop');
 var identity = require('ramda/src/identity');
 var equals = require('ramda/src/equals');
 var Task = require('data.task');
@@ -91,19 +93,24 @@ test('link, in-memory (no http)', function(assert){
   };
 
   // the fake http client
-  var toSchemaTuple = function(u){ return linker.schemaTuple(u, universe[u]); }
-  var getter = compose( map(toSchemaTuple), Task.of);  
+  var getter = compose( map(flip(prop)(universe)), Task.of);  
 
 
-  var task = linker.linkWith(getter, 'http://universe.com/schema/b', {});
+  var task = linker.link(getter, 'http://universe.com/schema/b', {});
   var act = task.fork(identity, identity);
   console.log(act);
 
   assert.ok( !(act instanceof Error), "task resolved" );
-  assert.equals(Object.keys(act).length, 3, "fetched 3 schemas");
-  for (var k in act){
-    assert.ok( equals(act[k],universe[k]), "fetched link " + k );
+  assert.equal( act.length, 2 );
+
+  assert.equals(Object.keys(act[0]).length, 3, "fetched 3 schemas");
+  for (var k in act[0]){
+    assert.ok( equals(act[0][k],universe[k]), "fetched link " + k );
   }
+  
+  assert.ok( equals(act[1], universe['http://universe.com/schema/b']),
+             'fetched requested schema' );
 
   assert.end();
+
 });

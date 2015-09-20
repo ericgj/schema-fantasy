@@ -24,27 +24,33 @@ var predicate = require('./src/predicate')
   , Predicate = predicate.Predicate;
 
 /*******************************************************************************
- * ValidateIn
- * Validate within schema (no external refs)
+ * validateIn
+ *  Validate within schema (no external refs)
+ *
+ *  Object -> a -> Validation(Array(Err),Nothing)
  */
-var validateIn = curry( function validateIn(schema, value){
+var validateIn = curry( function _validateIn(schema, value){
   return validate({},schema,value);
 });
 
 /*******************************************************************************
  * validate
- * Validate (including specified external refs table)
+ *  Validate (including specified external refs table)
+ *
+ *  Object -> Object -> a -> Validation(Array(Err),Nothing)
  */
-var validate = curry( function validate(refs, schema, value){
+var validate = curry( function _validate(refs, schema, value){
   refs = refs || {};
   return validateContext( context.init(refs,schema,value) );
 });
 
 /*******************************************************************************
  * validateContext
- * The basic validation algorithm.
- * Evaluate each predicate function on given context, and then apply each 
- * Validation result (or array of results) to the 'root' validation
+ *  The basic validation algorithm.
+ *  Evaluate each predicate function on given context, and then apply each 
+ *  Validation result (or array of results) to the 'root' validation.
+ *
+ *  Context.Cursor -> Validation(Array(Err),Nothing)
  */
 function validateContext(ctx){
   var schema = context.getCurrent(ctx)[0];
@@ -57,11 +63,12 @@ function validateContext(ctx){
 
 /*******************************************************************************
  * getPred
- * Get predicate eval function from schema key and context
+ *  Get predicate eval function from schema key and context
+ *  
  *     Context.Cursor c -> String k -> Predicate k c   
  *  or Context.Cursor c -> String k -> Predicate k Function c
  */
-var getPred = curry( function getPred(ctx, key){
+var getPred = curry( function _getPred(ctx, key){
   if (!(key in Predicate)) return Predicate.UNKNOWN();
   var pred = Predicate[key], n = pred.length;  // check arity of predicate function
   var args = ( n === 0        ? []
