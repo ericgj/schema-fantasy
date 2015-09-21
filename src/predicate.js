@@ -12,6 +12,7 @@ var allOf = require('./v4/allOf');
 var anyOf = require('./v4/anyOf');
 var dependencies = require('./v4/dependencies');
 var _enum = require('./v4/enum');
+var items = require('./v4/items');
 var not = require('./v4/not');
 var oneOf = require('./v4/oneOf');
 var patternProperties = require('./v4/patternProperties');
@@ -25,6 +26,7 @@ var Predicate = Type({
   anyOf:                [Function, Context.Cursor],
   dependencies:         [Function, Context.Cursor],
   enum:                 [Context.Cursor],
+  items:                [Function, Context.Cursor],
   not:                  [Function, Context.Cursor],
   oneOf:                [Function, Context.Cursor],
   patternProperties:    [Function, Context.Cursor],
@@ -40,6 +42,7 @@ var evaluate = Predicate.case({
   anyOf: anyOf, 
   dependencies: dependencies,
   enum: _enum,
+  items: items,
   not: not,
   oneOf: oneOf, 
   patternProperties: patternProperties, 

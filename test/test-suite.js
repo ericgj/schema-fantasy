@@ -12,12 +12,13 @@ var showSuccess = function(x){ return x.getOrElse("(valid)"); }
 var showFailure = function(xs){ return map(err.toString, xs).join("\n") ; }
 
 var SUITE = {
-  // additionalItems: require('./JSON-Schema-Test-Suite/tests/draft4/additionalItems.json'),
+  additionalItems: require('./JSON-Schema-Test-Suite/tests/draft4/additionalItems.json'),
   additionalProperties: require('./JSON-Schema-Test-Suite/tests/draft4/additionalProperties.json'),
   allOf: require('./JSON-Schema-Test-Suite/tests/draft4/allOf.json'),
   anyOf: require('./JSON-Schema-Test-Suite/tests/draft4/anyOf.json'),
   dependencies: require('./JSON-Schema-Test-Suite/tests/draft4/dependencies.json'),
   enum: require('./JSON-Schema-Test-Suite/tests/draft4/enum.json'),
+  items: require('./JSON-Schema-Test-Suite/tests/draft4/items.json'),
   not: require('./JSON-Schema-Test-Suite/tests/draft4/not.json'),
   oneOf: require('./JSON-Schema-Test-Suite/tests/draft4/oneOf.json'),
   patternProperties: require('./JSON-Schema-Test-Suite/tests/draft4/patternProperties.json'),

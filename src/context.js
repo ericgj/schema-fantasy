@@ -91,6 +91,23 @@ var focusPair = Context.caseOn({
   }
 });
 
+/***
+ * Focus on sibling schema and key of value, specified as a pair
+ *  (used by items/additionalItems)
+ */
+var focusSiblingSchemaPair = Context.caseOn({
+  Cursor: function focusSiblingSchemaCursor(refs,spath,vpath,schema,value,pair){
+    var skey = pair[0], vkey = pair[1];
+    var newspath = append(skey, dropLast(1,spath)), newvpath = append(vkey,vpath)
+      , newvalue = path([vkey],value);
+    var resolved = resolveRef(refs,newspath,schema)
+      , rpath = resolved[0], rschema = resolved[1];
+
+    return Context.Cursor(refs,
+                          rpath,   newvpath, 
+                          rschema, newvalue) ;
+  }
+});
 
 /***
  * Focus on key of schema for current value
@@ -157,6 +174,7 @@ module.exports = {
   focusSchema: focusSchema, 
   focusValue: focusValue, 
   focusPair: focusPair,
+  focusSiblingSchemaPair: focusSiblingSchemaPair,
   getCurrent: getCurrent,
   getSiblingSchema: getSiblingSchema,
   getCurrentPath: getCurrentPath
