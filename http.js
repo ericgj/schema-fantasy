@@ -1,8 +1,11 @@
+/* globals fetch: true */
+'use strict';
 var curry = require('ramda/src/curry');
 var compose = require('ramda/src/compose');
 var map = require('ramda/src/map');
 var flip = require('ramda/src/flip');
 var apply = require('ramda/src/apply');
+var invoker = require('ramda/src/invoker');
 var Either = require('data.either');
 
 var _validate = require('./index').validate;

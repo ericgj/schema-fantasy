@@ -1,13 +1,10 @@
-/* globals fetch: true */
 'use strict';
-var head = require('ramda/src/head');
 var map = require('ramda/src/map');
 var chain = require('ramda/src/chain');
 var reduce = require('ramda/src/reduce');
 var curry = require('ramda/src/curry');
 var compose = require('ramda/src/compose');
 var assoc = require('ramda/src/assoc');
-var invoker = require('ramda/src/invoker');
 var valuesIn = require('ramda/src/valuesIn');
 var type = require('ramda/src/type');
 var filter = require('ramda/src/filter');
@@ -16,8 +13,6 @@ var hasIn = require('ramda/src/hasIn');
 var flip = require('ramda/src/flip');
 var Type = require('union-type');
 var Task = require('data.task');
-
-if (typeof fetch == 'undefined') var fetch = require('node-fetch');
 
 var url = require('./url');
 

@@ -2,6 +2,7 @@
 var map = require('ramda/src/map');
 var append = require('ramda/src/append');
 var path = require('ramda/src/path');
+var dropLast = require('ramda/src/dropLast');
 var T = require('ramda/src/T');
 var Type = require('union-type');
 
@@ -72,6 +73,25 @@ var focus = Context.caseOn({
   }
 });
 
+
+/***
+ * Focus on key of schema and key of value, specified as a pair
+ */
+var focusPair = Context.caseOn({
+  Cursor: function focusCursor(refs,spath,vpath,schema,value,pair){
+    var skey = pair[0], vkey = pair[1];
+    var newspath = append(skey,spath), newvpath = append(vkey,vpath)
+      , newvalue = path([vkey],value);
+    var resolved = resolveRef(refs,newspath,schema)
+      , rpath = resolved[0], rschema = resolved[1];
+
+    return Context.Cursor(refs,
+                          rpath,   newvpath, 
+                          rschema, newvalue) ;
+  }
+});
+
+
 /***
  * Focus on key of schema for current value
  */
@@ -87,14 +107,14 @@ var focusSchema = Context.caseOn({
   }
 });
 
+
 /***
  * Focus on key of value for current schema 
- * Note I don't think this is used and can be removed
  */
 var focusValue = Context.caseOn({
   Cursor: function focusValueCursor(refs,spath,vpath,schema,value,key){
     return Context.Cursor(refs,
-                          spath,  append(vpath,key), 
+                          spath,  append(key,vpath), 
                           schema, path([key],value)) ;
   }
 });
@@ -108,6 +128,17 @@ var getCurrent = Context.case({
     return [ path(spath,schema), value ];
   }
 });
+
+/***
+ * Get schema at sibling key to current
+ * (used by additionalProperties, e.g.)
+ */
+var getSiblingSchema = Context.caseOn({
+  Cursor: function getSiblingSchema(refs,spath,vpath,schema,value,key){
+    return path( append(key,dropLast(1,spath)), schema );
+  }
+});
+
 
 /***
  * Get current schema path and value path, not resolving refs
@@ -125,7 +156,9 @@ module.exports = {
   focus: focus, 
   focusSchema: focusSchema, 
   focusValue: focusValue, 
+  focusPair: focusPair,
   getCurrent: getCurrent,
+  getSiblingSchema: getSiblingSchema,
   getCurrentPath: getCurrentPath
 }
 

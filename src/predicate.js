@@ -7,30 +7,42 @@ var Validation = require('data.validation')
 
 var Context = require('./context').Context;
 
+var additionalProperties = require('./v4/additionalProperties');
 var allOf = require('./v4/allOf');
 var anyOf = require('./v4/anyOf');
+var dependencies = require('./v4/dependencies');
 var _enum = require('./v4/enum');
+var not = require('./v4/not');
 var oneOf = require('./v4/oneOf');
+var patternProperties = require('./v4/patternProperties');
 var properties = require('./v4/properties');
 var required = require('./v4/required');
 var type  = require('./v4/type');
 
 var Predicate = Type({
-  allOf: [Function, Context.Cursor],
-  anyOf: [Function, Context.Cursor],
-  enum: [Context.Cursor],
-  oneOf: [Function, Context.Cursor],
-  properties: [Function, Context.Cursor],
-  required: [Context.Cursor],
-  type: [Context.Cursor],
+  additionalProperties: [Function, Context.Cursor],
+  allOf:                [Function, Context.Cursor],
+  anyOf:                [Function, Context.Cursor],
+  dependencies:         [Function, Context.Cursor],
+  enum:                 [Context.Cursor],
+  not:                  [Function, Context.Cursor],
+  oneOf:                [Function, Context.Cursor],
+  patternProperties:    [Function, Context.Cursor],
+  properties:           [Function, Context.Cursor],
+  required:             [Context.Cursor],
+  type:                 [Context.Cursor],
   UNKNOWN: []
 });
 
 var evaluate = Predicate.case({
+  additionalProperties: additionalProperties,
   allOf: allOf, 
   anyOf: anyOf, 
+  dependencies: dependencies,
   enum: _enum,
+  not: not,
   oneOf: oneOf, 
+  patternProperties: patternProperties, 
   properties: properties, 
   required: required,
   type: type,

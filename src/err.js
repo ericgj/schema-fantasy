@@ -15,7 +15,8 @@ var compact = filter(compose(not, isEmpty));
 var Err = Type({
   Single:   [String, Context.Cursor],          // message, context
   Compound: [String, Context.Cursor, Array],   // message, context, array of Err
-  Values:   [String, Context.Cursor, String, String]  // message, context, expected, actual 
+  Values:   [String, Context.Cursor, String, String],  // message, context, expected, actual 
+  Type:     [Context.Cursor, String, String]   // context, expected, actual
 });
 
 var toString = Err.case({
@@ -53,6 +54,10 @@ var toString = Err.case({
                     msg, 
                     "expected " + exp + ", was " + act
                    ]).join(': ');
+  },
+
+  Type: function toStringType(ctx,exp,act){
+    return toString(Err.Values("unexpected type",ctx,exp,act));
   }
 
 });

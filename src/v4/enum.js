@@ -8,10 +8,7 @@ var Validation = require('data.validation')
 
 var context = require('../context');
 var Err = require('../err').Err;
-
-function humanList(last, list){
-  return [list.slice(0,-1).join(', '), list.slice(-1)].join(', ' + last + ' ');
-}
+var humanList = require('../humanlist');
 
 module.exports = function _enum(ctx){
   var current = context.getCurrent(ctx) 
@@ -25,7 +22,7 @@ module.exports = function _enum(ctx){
   }
 
   var strExpected = map(JSON.stringify,expected);
-  var strActual = JSON.stringify(value);
+  var strActual = JSON.stringify(value === undefined ? null : value);
 
   return found ? Success(identity)
     : Failure([Err.Values("", ctx, humanList('or',strExpected), strActual)]);
