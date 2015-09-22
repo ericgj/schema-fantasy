@@ -8,14 +8,17 @@ var Validation = require('data.validation')
 var context = require('../context');
 var Err = require('../err').Err;
 
-module.exports = function multipleOf(ctx){
+module.exports = function maxItems(ctx){
   var cur = context.getCurrent(ctx)
     , schema = cur[0], value = cur[1], t = type(value)
   
-  if (t !== 'Number') return Success(identity);
-  
+  if (t !== 'Array') return Success(identity);
+
   return (
-    (((value/schema) % 1) === 0) ? Success(identity)
-      : Failure([Err.Single("not a multiple of " + schema, ctx)])
+    (value.length <= schema) ? Success(identity)
+      : Failure([Err.Single("more than " + schema + " items", ctx)])
   );
 }
+
+
+

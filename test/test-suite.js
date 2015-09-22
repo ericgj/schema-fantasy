@@ -19,12 +19,20 @@ var SUITE = {
   dependencies: require('./JSON-Schema-Test-Suite/tests/draft4/dependencies.json'),
   enum: require('./JSON-Schema-Test-Suite/tests/draft4/enum.json'),
   items: require('./JSON-Schema-Test-Suite/tests/draft4/items.json'),
+  maximum: require('./JSON-Schema-Test-Suite/tests/draft4/maximum.json'),
+  maxItems: require('./JSON-Schema-Test-Suite/tests/draft4/maxItems.json'),
+  maxProperties: require('./JSON-Schema-Test-Suite/tests/draft4/maxProperties.json'),
+  minimum: require('./JSON-Schema-Test-Suite/tests/draft4/minimum.json'),
+  minItems: require('./JSON-Schema-Test-Suite/tests/draft4/minItems.json'),
+  minProperties: require('./JSON-Schema-Test-Suite/tests/draft4/minProperties.json'),
   not: require('./JSON-Schema-Test-Suite/tests/draft4/not.json'),
   oneOf: require('./JSON-Schema-Test-Suite/tests/draft4/oneOf.json'),
+  pattern: require('./JSON-Schema-Test-Suite/tests/draft4/pattern.json'),
   patternProperties: require('./JSON-Schema-Test-Suite/tests/draft4/patternProperties.json'),
   properties: require('./JSON-Schema-Test-Suite/tests/draft4/properties.json'),
   required: require('./JSON-Schema-Test-Suite/tests/draft4/required.json'),
-  type: require('./JSON-Schema-Test-Suite/tests/draft4/type.json')
+  type: require('./JSON-Schema-Test-Suite/tests/draft4/type.json'),
+  uniqueItems: require('./JSON-Schema-Test-Suite/tests/draft4/uniqueItems.json')
 };
 
 

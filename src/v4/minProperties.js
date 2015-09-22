@@ -1,6 +1,7 @@
 'use strict';
 var identity = require('ramda/src/identity');
 var type = require('ramda/src/type');
+var keysIn = require('ramda/src/keysIn');
 var Validation = require('data.validation')
     , Success = Validation.Success
     , Failure = Validation.Failure
@@ -8,14 +9,15 @@ var Validation = require('data.validation')
 var context = require('../context');
 var Err = require('../err').Err;
 
-module.exports = function multipleOf(ctx){
+module.exports = function minProperties(ctx){
   var cur = context.getCurrent(ctx)
     , schema = cur[0], value = cur[1], t = type(value)
   
-  if (t !== 'Number') return Success(identity);
-  
+  if (t !== 'Object') return Success(identity);
+
   return (
-    (((value/schema) % 1) === 0) ? Success(identity)
-      : Failure([Err.Single("not a multiple of " + schema, ctx)])
+    (keysIn(value).length >= schema) ? Success(identity)
+      : Failure([Err.Single("less than " + schema + " properties", ctx)])
   );
 }
+

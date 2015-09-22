@@ -8,14 +8,25 @@ var Validation = require('data.validation')
 var context = require('../context');
 var Err = require('../err').Err;
 
-module.exports = function multipleOf(ctx){
+module.exports = function minimum(ctx){
   var cur = context.getCurrent(ctx)
     , schema = cur[0], value = cur[1], t = type(value)
   
   if (t !== 'Number') return Success(identity);
   
+  var excl = context.getSiblingSchema(ctx,'exclusiveMinimum')
+    , excltype = type(excl);
+
+  if (excltype !== 'Boolean') excl = false;
+
   return (
-    (((value/schema) % 1) === 0) ? Success(identity)
-      : Failure([Err.Single("not a multiple of " + schema, ctx)])
+    (excl ? value > schema : value >= schema) ? Success(identity)
+      : Failure([
+          Err.Single("less than " + (excl ? "or equal to " : "") + schema, ctx)
+        ])
   );
 }
+
+
+
+
