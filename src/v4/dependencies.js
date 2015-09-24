@@ -15,15 +15,25 @@ var Validation = require('data.validation')
 var context = require('../context');
 var Err = require('../err').Err;
 
-var validateDependency = curry( function _validateDependency(validate, ctx, p){
-  return validate(context.focusSchema( context.focusSchema(ctx,'dependencies'), p));
-});
-
 function getError(r){ return r.orElse(identity); }
 
-function missingDep(ctx,key,dep){
+var validatePresence = curry( function _validatePresence(ctx,value,key,dep){
+  return (dep in value) ? Success(identity)
+    : Failure([
+        Err.Single('Missing "' + dep + '" given "' + key + '"', ctx) 
+      ]);
+});
+
+var validateDependency = curry( function _validateDependency(validate, ctx, p){
+  return validate(context.focusSchema(ctx, p));
+});
+
+
+
+function missingDep(ctx,key,errs){
   return Failure([ 
-    Err.Single('Missing dependency "' + dep + "' given '" + key + "'", ctx) 
+    Err.Compound('Missing dependenc' + (errs.length === 1 ? "y " : "ies ") + 
+                 'for "' + key + '"', ctx, errs) 
   ]);
 }
 
@@ -40,28 +50,25 @@ module.exports = function dependencies(validate,ctx){
 
   if (t !== 'Object') return Success(identity); 
 
-  for (var key in schema){
-    if (!(key in value)) continue;
-    var dep = schema[key]
-      , deptype = type(dep);
-    if ('Array' == deptype){
-      for (var i=0;i<dep.length;++i){
-        if (!(dep[i] in value)){
-          fails = chain( always(missingDep(ctx,key,dep[i])), fails);
-        }
+  return map( function(key){
+      if (!(key in value)) return Success(identity);
+      var dep = schema[key]
+        , deptype = type(dep);
+      if ('Array' == deptype){
+        var results = map( validatePresence(ctx,value,key) , dep);
+        var failResults = filter(prop('isFailure'), results);
+        var failErrs = chain(getError, failResults);
+        return (failResults.length === 0) ? Success(identity)
+          : missingDep(ctx,key,failErrs) ;
+      } 
+      if ('Object' == deptype){
+        var result = validateDependency(validate,ctx,key);
+        return (result.isSuccess) ? Success(identity)
+          : failedDep(ctx,key, chain(getError, [result]));
       }
-    } 
-    if ('Object' == deptype){
-      var results = map( validateDependency(validate,ctx), keysIn(dep) );
-      var failResults = filter(prop('isFailure'), results);
-      var failErrs = chain(getError, failResults);
-      if (failResults.length > 0){
-        fails = chain( always(failedDep(ctx,key,failErrs)), fails);
-      }
-    }
-  }
-  
-  return fails;
+    },
+    keysIn(schema)
+  );
 }
 
 

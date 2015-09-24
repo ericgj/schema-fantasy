@@ -5,6 +5,7 @@ var Validation = require('data.validation')
     , Success = Validation.Success
     , Failure = Validation.Failure
 
+var ulength = require('../ulength');
 var context = require('../context');
 var Err = require('../err').Err;
 
@@ -14,8 +15,14 @@ module.exports = function maxLength(ctx){
   
   if (t !== 'String') return Success(identity);
 
+  var len = value.length;
+  if (value.normalize){ // if ES6-compatible string
+    value = value.normalize();
+    len = ulength(value);
+  }
+
   return (
-    (value.length <= schema) ? Success(identity)
+    (len <= schema) ? Success(identity)
       : Failure([Err.Single("longer than " + schema + " characters", ctx)])
   );
 }

@@ -10,7 +10,7 @@ module.exports = function not(validate,ctx){
   var result = validate(ctx);
   return (
     result.isFailure ? Success(identity) 
-      : Failure([Err.Single("Condition valid", ctx)]) 
+      : Failure([Err.Single("condition valid", ctx)]) 
   );
 
 }

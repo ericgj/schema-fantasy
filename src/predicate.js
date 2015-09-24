@@ -15,10 +15,13 @@ var _enum = require('./v4/enum');
 var items = require('./v4/items');
 var maximum = require('./v4/maximum');
 var maxItems = require('./v4/maxItems');
+var maxLength = require('./v4/maxLength');
 var maxProperties = require('./v4/maxProperties');
 var minimum = require('./v4/minimum');
 var minItems = require('./v4/minItems');
+var minLength = require('./v4/minLength');
 var minProperties = require('./v4/minProperties');
+var multipleOf = require('./v4/multipleOf');
 var not = require('./v4/not');
 var oneOf = require('./v4/oneOf');
 var pattern = require('./v4/pattern');
@@ -37,10 +40,13 @@ var Predicate = Type({
   items:                [Function, Context.Cursor],
   maximum:              [Context.Cursor],
   maxItems:             [Context.Cursor],
+  maxLength:            [Context.Cursor],
   maxProperties:        [Context.Cursor],
   minimum:              [Context.Cursor],
   minItems:             [Context.Cursor],
+  minLength:            [Context.Cursor],
   minProperties:        [Context.Cursor],
+  multipleOf:           [Context.Cursor],
   not:                  [Function, Context.Cursor],
   oneOf:                [Function, Context.Cursor],
   pattern:              [Context.Cursor],
@@ -61,10 +67,13 @@ var evaluate = Predicate.case({
   items: items,
   maximum: maximum,
   maxItems: maxItems,
+  maxLength: maxLength,
   maxProperties: maxProperties,
   minimum: minimum,
   minItems: minItems,
+  minLength: minLength,
   minProperties: minProperties,
+  multipleOf: multipleOf,
   not: not,
   oneOf: oneOf, 
   pattern: pattern, 

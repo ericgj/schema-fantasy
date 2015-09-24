@@ -22,7 +22,7 @@ module.exports = function anyOf(validate,ctx){
   var failErrs = chain(getError, failResults);
 
   return (  
-    (failResults.length < results.length) ? Success(identity)
+    (results.length === 0 || (failResults.length < results.length)) ? Success(identity)
       : Failure([Err.Compound("No conditions valid", ctx, failErrs)])
   );
 }
