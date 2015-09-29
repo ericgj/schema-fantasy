@@ -35,6 +35,7 @@ var SUITE = {
   patternProperties: require('./JSON-Schema-Test-Suite/tests/draft4/patternProperties.json'),
   properties: require('./JSON-Schema-Test-Suite/tests/draft4/properties.json'),
   required: require('./JSON-Schema-Test-Suite/tests/draft4/required.json'),
+  ref: require('./JSON-Schema-Test-Suite/tests/draft4/ref.json'),
   type: require('./JSON-Schema-Test-Suite/tests/draft4/type.json'),
   uniqueItems: require('./JSON-Schema-Test-Suite/tests/draft4/uniqueItems.json')
 };

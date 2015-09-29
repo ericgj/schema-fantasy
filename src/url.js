@@ -1,4 +1,6 @@
+/* globals decodeURIComponent: true */
 'use strict';
+
 var url = require('url');
 
 function normalize(u){
@@ -23,11 +25,19 @@ function isLocalTo(schema,u){
 // TODO note this assumes the hash will start with '/'
 function getBaseAndPath(u){
   var parts = normalize(u).split('#');
-  return [ parts[0], (parts[1] || '').split('/').slice(1) ];
+  return [ parts[0], unescapePath(((parts[1] || '').split('/').slice(1) || '')) ];
 }
 
 function getBase(u){ return getBaseAndPath(u)[0]; }
 function getPath(u){ return getBaseAndPath(u)[1]; }
+
+function unescapePath(parts){
+  return parts.map(unescape);
+}
+
+function unescape(str){
+  return decodeURIComponent(str.replace(/\~0/,'~').replace(/\~1/,'/'));
+}
 
 module.exports = {
   normalize: normalize,
