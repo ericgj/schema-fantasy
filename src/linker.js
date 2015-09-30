@@ -17,6 +17,18 @@ var Task = require('data.task');
 var url = require('./url');
 
 
+var linkSchema = function linkSchema(getter,schema,cache){
+ var taskChain = function(task,ref){
+   return chain( cacheLink(getter,ref), task);
+ }
+ return (
+   reduce( taskChain, 
+           Task.of(Link.Cache(cache || {}, [])), 
+           refsIn('',schema)
+   )
+ );
+}
+
 /*******************************************************************************
  * link
  *  Link function isolated from HTTP (or any other transport).
@@ -36,12 +48,15 @@ var url = require('./url');
  *  Function -> String -> Object -> Task(Error, (Object, Object))
  */
 var link = function link(getter,u,cache){
-  cache = Link.Cache(cache || {}, []);
+  return cacheLink(getter,u,Link.Cache(cache || {}, []));
+}
+
+var cacheLink = curry( function _cacheLink(getter,u,cache){
   var getSchemaTuple = function(u){
     return map( schemaTuple(u), getter(u));
   }
   return map( flip(cacheRefsAndSchema)(u), _link(getSchemaTuple, u, cache) );
-}
+});
 
 // String -> Object -> (String, Object, Array(String))
 var schemaTuple = curry( function _schemaTuple(u,schema){
@@ -122,6 +137,7 @@ var schemaBase = curry( function _schemaBase(u,schema){
 
 
 module.exports = {
+  linkSchema: linkSchema,
   link: link,
   refsIn: refsIn,
   schemaBase: schemaBase

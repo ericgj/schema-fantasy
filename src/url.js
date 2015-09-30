@@ -35,6 +35,7 @@ function unescapePath(parts){
   return parts.map(unescape);
 }
 
+// Note: JSON Pointer unescape + decodeURIComponent
 function unescape(str){
   return decodeURIComponent(str.replace(/\~0/,'~').replace(/\~1/,'/'));
 }

@@ -6,7 +6,16 @@ var test = require('tape');
 
 var err = require('../src/err');
 var v = require('../index')
-  , validateIn = v.validateIn;
+  , validate = v.validate({   // note remote refs are pre-cached
+                 'http://json-schema.org/draft-04/schema': 
+                   require('./remotes/draft-04/schema.json'),
+                 'http://localhost:1234/integer.json':
+                   require('./JSON-Schema-Test-Suite/remotes/integer.json'),
+                 'http://localhost:1234/subSchemas.json':
+                   require('./JSON-Schema-Test-Suite/remotes/subSchemas.json'),
+                 'http://localhost:1234/folder/folderInteger.json':
+                   require('./JSON-Schema-Test-Suite/remotes/folder/folderInteger.json')
+               });
 
 var showSuccess = function(x){ return x.getOrElse("(valid)"); }
 var showFailure = function(xs){ return map(err.toString, xs).join("\n") ; }
@@ -35,9 +44,13 @@ var SUITE = {
   patternProperties: require('./JSON-Schema-Test-Suite/tests/draft4/patternProperties.json'),
   properties: require('./JSON-Schema-Test-Suite/tests/draft4/properties.json'),
   required: require('./JSON-Schema-Test-Suite/tests/draft4/required.json'),
-  ref: require('./JSON-Schema-Test-Suite/tests/draft4/ref.json'),
   type: require('./JSON-Schema-Test-Suite/tests/draft4/type.json'),
-  uniqueItems: require('./JSON-Schema-Test-Suite/tests/draft4/uniqueItems.json')
+  uniqueItems: require('./JSON-Schema-Test-Suite/tests/draft4/uniqueItems.json'),
+
+  // run remote ref tests at end
+  definitions: require('./JSON-Schema-Test-Suite/tests/draft4/definitions.json'),
+  ref: require('./JSON-Schema-Test-Suite/tests/draft4/ref.json'),
+  refRemote: require('./JSON-Schema-Test-Suite/tests/draft4/refRemote.json')
 };
 
 
@@ -72,7 +85,7 @@ function singleTest(group, feature, schema, expected){
   var desc = expected.description;
   return function(assert){
     assert.plan(1);
-    var actual = validateIn(schema, data);
+    var actual = validate(schema, data);
     console.log( actual.fold(showFailure, showSuccess) );
 
     if (valid) { 
@@ -82,6 +95,7 @@ function singleTest(group, feature, schema, expected){
       assert.equal( actual.isSuccess, valid, 
                     "expected invalid (" + [group, feature, desc].join('; ') + ")");
     }
-  }
+  };
 }
+
 
