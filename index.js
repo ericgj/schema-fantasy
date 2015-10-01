@@ -2,6 +2,7 @@
 
 var curry = require('ramda/src/curry');
 var curryN = require('./src/curryn');  // unlimited arity
+var curryN_opt = require('ramda/src/curryN');
 var chain = require('ramda/src/chain');
 var identity = require('ramda/src/identity');
 var compose = require('ramda/src/compose');

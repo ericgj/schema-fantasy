@@ -47,12 +47,12 @@ var getSchema = curry( function _getSchema(options,u){
  */
 var validate = curry( function _validate(options, refs, u, value){
   var task = link(options, u, refs);
-  return map( flip(apply)(value), map( apply(__validate), task));
+  return map( flip(apply)([value]), map( apply(__validate), task));
 });
 
 var validateWithSchema = curry( function _validateWithSchema(options, refs, schema, value){
   var task = linkSchema(options, schema, refs);
-  return map( flip(apply)(value), map( apply(__validate), task));
+  return map( flip(apply)([value]), map( apply(__validate), task));
 });
   
 

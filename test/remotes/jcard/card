@@ -1,0 +1,13 @@
+{
+  "id": "http://localhost:8080/jcard/card",
+  "type": "array",
+  "minItems": 2,
+  "maxItems": 2,
+  "items": [
+    { "type": "string", "enum": ["jcard"] },
+    { "type": "array",
+      "items": {"$ref": "property"}
+    }
+  ]
+}
+  

@@ -1,0 +1,52 @@
+{
+  "id": "http://localhost:8080/jcard/property",
+  "type": "array",
+  "minItems": 3,
+  "oneOf": [
+    {"$ref": "#/definitions/text"},
+    {"$ref": "#/definitions/uri"},
+    {"$ref": "#/definitions/date"}
+  ],
+  "definitions": {
+    "version":  { 
+        "allOf": [
+          { "$ref": "#/definitions/text"},
+          { "items": [
+              { "enum": ["version"] }
+            ]
+          }
+        ]
+    },
+    "propName": { 
+      "enum": ["version","fn","n","kind","member","email","adr"]
+    },
+    "params": {
+      "type": "object"
+    },
+    "text": {
+      "items": [
+        {"$ref": "#/definitions/propName"},
+        {"$ref": "#/definitions/params"},
+        {"enum": ["text"]},
+        {"type": "string"}
+      ]
+    },
+    "uri": {
+      "items": [
+        {"$ref": "#/definitions/propName"},
+        {"$ref": "#/definitions/params"},
+        {"enum": ["uri"]},
+        {"type": "string", "format": "uri"}
+      ]
+    },
+    "date": {
+      "items": [
+        {"$ref": "#/definitions/propName"},
+        {"$ref": "#/definitions/params"},
+        {"enum": ["date"]},
+        {"type": "string"}
+      ]
+    }
+
+  }
+}
