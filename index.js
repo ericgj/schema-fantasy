@@ -9,6 +9,7 @@ var compose = require('ramda/src/compose');
 var reduce = require('ramda/src/reduce');
 var ap = require('ramda/src/ap');
 var map = require('ramda/src/map');
+var of = require('ramda/src/of');
 var keysIn = require('ramda/src/keysIn');
 
 var Type = require('union-type');
@@ -20,9 +21,11 @@ var Failure = Validation.Failure;
 var Nothing = Maybe.Nothing;
 
 var context = require('./src/context')
-  , Context = context.Context;
+  , Path    = context.Path;
 var predicate = require('./src/predicate')
   , Predicate = predicate.Predicate;
+
+var treis = require('treis');
 
 /*******************************************************************************
  * validateIn
@@ -42,7 +45,11 @@ var validateIn = curry( function _validateIn(schema, value){
  */
 var validate = curry( function _validate(refs, schema, value){
   refs = refs || {};
-  return validateContext( context.init(refs,schema,value) );
+  var ctx = context.init(refs,schema,value);
+  return ctx.fold(
+    compose(Failure, of),
+    validateContext
+  );
 });
 
 /*******************************************************************************
@@ -54,12 +61,16 @@ var validate = curry( function _validate(refs, schema, value){
  *  Context.Cursor -> Validation(Array(Err),Nothing)
  */
 function validateContext(ctx){
-  var schema = context.getCurrent(ctx)[0];
-  var evalPred = compose(predicate.evaluate, getPred(ctx));
-  var valids = chain(evalPred, keysIn(schema));
-  var root = valids.length === 0 ? Success(Nothing())
-                                 : Success(curryN(valids.length, Nothing));
-  return reduce( ap, root, valids );
+  return context.getSchema(ctx).fold(
+    compose(Failure, of),
+    function _validateContext(schema){
+      var evalPred = compose(predicate.evaluate, getPred(ctx));
+      var valids = chain(evalPred, keysIn(schema));
+      var root = valids.length === 0 ? Success(Nothing())
+                                     : Success(curryN(valids.length, Nothing));
+      return reduce( ap, root, valids );
+    }
+  );
 }
 
 /*******************************************************************************
@@ -72,9 +83,10 @@ function validateContext(ctx){
 var getPred = curry( function _getPred(ctx, key){
   if (!(key in Predicate)) return Predicate.UNKNOWN();
   var pred = Predicate[key], n = pred.length;  // check arity of predicate function
+  var target = [Path.Child(key), Path.Self()]; // focus schema on key
   var args = ( n === 0        ? []
-               : n === 1      ? [context.focusSchema(ctx,key)]
-               /*otherwise*/  : [validateContext, context.focusSchema(ctx,key)]
+               : n === 1      ? [context.focus(ctx,target)]
+               /*otherwise*/  : [validateContext, context.focus(ctx,target)]
              );
   return pred.apply(pred,args); 
 });

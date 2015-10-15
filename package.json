@@ -24,7 +24,8 @@
     "babel": "^5.8.21",
     "babelify": "^6.1.1",
     "source-map-support": "^0.3.2",
-    "http-server": "^0.8.5"
+    "http-server": "^0.8.5",
+    "treis": "^2.3.13"
   },
   "jshintConfig": {
     "globalstrict": true,

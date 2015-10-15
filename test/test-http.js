@@ -1,3 +1,4 @@
+/* globals console: true, setTimeout: true */
 'use strict';
 
 /***

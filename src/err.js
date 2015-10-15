@@ -1,22 +1,32 @@
 'use strict';
 var filter = require('ramda/src/filter');
 var map = require('ramda/src/map');
+var all = require('ramda/src/all');
 var compose = require('ramda/src/compose');
 var not = require('ramda/src/not');
 var isEmpty = require('ramda/src/isEmpty');
 
 var Type = require('union-type');
 
-var context = require('./context')
-  , Context = context.Context;
+var context = require('./context');
 
 var compact = filter(compose(not, isEmpty));
 
+function isStringOrNumber(x){
+  return typeof x === 'string' || typeof x === 'number' ;
+}
+
+function isContext(x){
+  return ('of' in x) && x.of === context.Context;
+}
+
 var Err = Type({
-  Single:   [String, Context.Cursor],          // message, context
-  Compound: [String, Context.Cursor, Array],   // message, context, array of Err
-  Values:   [String, Context.Cursor, String, String],  // message, context, expected, actual 
-  Type:     [Context.Cursor, String, String]   // context, expected, actual
+  Single:   [String, isContext],          // message, context
+  Compound: [String, isContext, Array],   // message, context, array of Err
+  Values:   [String, isContext, String, String],  // message, context, expected, actual 
+  Type:     [isContext, String, String],          // context, expected, actual
+  Ref:      [String, all(isStringOrNumber), String],   // message, context path array, ref url
+  Path:     [String, all(isStringOrNumber), isStringOrNumber]   // message, context path array, key
 });
 
 var toString = Err.case({
@@ -58,6 +68,16 @@ var toString = Err.case({
 
   Type: function toStringType(ctx,exp,act){
     return toString(Err.Values("unexpected type",ctx,exp,act));
+  },
+
+  Ref: function toStringRef(msg,path,url){
+    var pathstr = path.join('/');
+    return compact([pathstr, "Reference error", msg, url]).join(': ');
+  },
+
+  Path: function toStringPath(msg,path,key){
+    var pathstr = path.join('/');
+    return compact([pathstr, "Path error", msg, key]).join(': ');
   }
 
 });

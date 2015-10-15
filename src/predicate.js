@@ -33,6 +33,7 @@ var uniqueItems  = require('./v4/uniqueItems');
 
 var Predicate = Type({
   additionalProperties: [Function, Context.Cursor],
+/*
   allOf:                [Function, Context.Cursor],
   anyOf:                [Function, Context.Cursor],
   dependencies:         [Function, Context.Cursor],
@@ -51,15 +52,19 @@ var Predicate = Type({
   oneOf:                [Function, Context.Cursor],
   pattern:              [Context.Cursor],
   patternProperties:    [Function, Context.Cursor],
+*/
   properties:           [Function, Context.Cursor],
   required:             [Context.Cursor],
   type:                 [Context.Cursor],
+/*
   uniqueItems:          [Context.Cursor],
+*/
   UNKNOWN: []
 });
 
 var evaluate = Predicate.case({
   additionalProperties: additionalProperties,
+/*
   allOf: allOf, 
   anyOf: anyOf, 
   dependencies: dependencies,
@@ -78,11 +83,15 @@ var evaluate = Predicate.case({
   oneOf: oneOf, 
   pattern: pattern, 
   patternProperties: patternProperties, 
+*/
   properties: properties, 
   required: required,
   type: type,
+/*
   uniqueItems: uniqueItems,
+*/
   _: always(Success(identity))  // ignore unknown schema keys == always return success
 });
 
 module.exports = {Predicate: Predicate, evaluate: evaluate}
+

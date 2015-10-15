@@ -1,182 +1,181 @@
 'use strict';
 var map = require('ramda/src/map');
+var identity = require('ramda/src/identity');
+var of = require('ramda/src/of');
+var chain = require('ramda/src/chain');
+var curry = require('ramda/src/curry');
+var all = require('ramda/src/all');
+var commute = require('ramda/src/commute');
 var append = require('ramda/src/append');
-var path = require('ramda/src/path');
+//var path = require('ramda/src/path');
 var dropLast = require('ramda/src/dropLast');
+var commute = require('ramda/src/commute');
+var compose = require('ramda/src/compose');
+var flip = require('ramda/src/flip');
+var apply = require('ramda/src/apply');
+var prepend = require('ramda/src/prepend');
+var prop = require('ramda/src/prop');
 var T = require('ramda/src/T');
+
 var Type = require('union-type');
+var Either = require('data.either'); 
 
 var url = require('./url');
+var path = require('./path');  // either-ified
+var Err = require('./err').Err;
 
 function isStringOrNumber(x){
   return typeof x === 'string' || typeof x === 'number' ;
 }
 
-// Note: refs must have normalized url keys
-function resolveRef(refs,spath,schema,cyc){
-  cyc = cyc || {}
-  var cur = path(spath,schema);
-  if (typeof cur == 'object' && '$ref' in cur){
-    var ref = url.resolveTo(schema, cur['$ref'])
-      , parts = url.getBaseAndPath(ref)
-      , refdoc = parts[0], refpath = parts[1]; 
-
-    if (ref in cyc){
-      throw new Error("Cyclical reference detected: " + ref);
-    } else if (url.isLocalTo(schema, ref)){
-      cyc[ref] = true;
-      return resolveRef(refs, refpath, schema, cyc);
-    } else if (refdoc in refs){
-      cyc[ref] = true;
-      return resolveRef(refs, refpath, refs[refdoc], cyc);
-    } else {
-      throw new Error("Unknown resource: " + refdoc);  // TODO replace with Either.Left?
-    }
-  }
-  return [spath,schema];
-}
+var treis = require('treis');
 
 
+var Path = Type({
+  Self:    [],
+  Child:   [ isStringOrNumber ],
+  Sibling: [ isStringOrNumber ]
+});
 
+/***
+ * Set key in given path array
+ *   Path -> Array String|Number -> Array String|Number
+ */
+var setPath = Path.caseOn({
+  Self: identity,
+  Child: append,
+  Sibling: function(k,arr){ return append(k,dropLast(1,arr)); }
+});
+
+/***
+ * Get value from given value at Path
+ *   Path -> a -> Either Err b
+ */
+var getValue = Path.caseOn({
+  Self: compose(Either.Right, identity),
+  Child: function(k,v){ return path([k],v); }
+});
+
+
+
+var Context = Type({
+  Cursor: [Object, all(isStringOrNumber), all(isStringOrNumber), T, T]
+});
 
 /***
  * Initialize cursor at top of given schema and value
  * Note you should use this instead of calling Context.Cursor directly,
  *   in case top-level schema is a $ref
+ *
+ *  Object -> Object -> a -> Either Err Context.Cursor
  */
 var init = function init(refs,schema,value){
-  var resolved = resolveRef(refs,[],schema)
-    , rpath = resolved[0], rschema = resolved[1];
-  return Context.Cursor(refs, rpath, [], rschema, value);
+  return focus(Context.Cursor(refs,[],[],schema,value), 
+               [Path.Self(), Path.Self()]
+         );
 }
 
-
-var Context = Type({
-  Cursor: [Object, map(isStringOrNumber), map(isStringOrNumber), T, T]
-});
-
-
 /***
- * Focus on key of both schema and value
- * Note that entire schema is retained across contexts, while value is not.
+ * Focus cursor to given (schema Path, value Path)
+ *
+ *   Schema -> (Path, Path) -> Either Err Context.Cursor
  */
 var focus = Context.caseOn({
-  Cursor: function focusCursor(refs,spath,vpath,schema,value,key){
-    var newspath = append(key,spath), newvpath = append(key,vpath)
-      , newvalue = path([key],value);
-    var resolved = resolveRef(refs,newspath,schema)
-      , rpath = resolved[0], rschema = resolved[1];
-
-    return Context.Cursor(refs,
-                          rpath,   newvpath, 
-                          rschema, newvalue) ;
+  Cursor: function focusCursor(refs,spath,vpath,schema,value,paths){
+    var newspath  = setPath(paths[0],spath);
+    var newsvalue = resolveRef(refs, newspath, schema);
+    var newvpath  = setPath(paths[1],vpath);
+    var newvalue  = getValue(paths[1],value);     
+    
+    return map( apply(function(s,v){
+                        return Context.Cursor(refs, s[0], newvpath, s[1], v);
+                      }),
+               commute(Either.Right, [newsvalue, newvalue])
+    );
   }
 });
-
-
+   
 /***
- * Focus on key of schema and key of value, specified as a pair
+ * Return list of cursors given list of (schema Path, value Path)
+ * Note: commutes list of Eithers to Either of list
+ * 
+ *   Schema -> Array (Path, Path) -> Either Err (Array Context.Cursor)
  */
-var focusPair = Context.caseOn({
-  Cursor: function focusCursor(refs,spath,vpath,schema,value,pair){
-    var skey = pair[0], vkey = pair[1];
-    var newspath = append(skey,spath), newvpath = append(vkey,vpath)
-      , newvalue = path([vkey],value);
-    var resolved = resolveRef(refs,newspath,schema)
-      , rpath = resolved[0], rschema = resolved[1];
-
-    return Context.Cursor(refs,
-                          rpath,   newvpath, 
-                          rschema, newvalue) ;
+var subcontexts = Context.caseOn({
+  Cursor: function subcontextsCursor(refs,spath,vpath,schema,value,paths){
+    return commute(Either.Right,
+                   map( focus(Context.Cursor(refs,spath,vpath,schema,value)), 
+                        paths)
+                  );
   }
 });
 
-/***
- * Focus on sibling schema and key of value, specified as a pair
- *  (used by items/additionalItems)
- */
-var focusSiblingSchemaPair = Context.caseOn({
-  Cursor: function focusSiblingSchemaCursor(refs,spath,vpath,schema,value,pair){
-    var skey = pair[0], vkey = pair[1];
-    var newspath = append(skey, dropLast(1,spath)), newvpath = append(vkey,vpath)
-      , newvalue = path([vkey],value);
-    var resolved = resolveRef(refs,newspath,schema)
-      , rpath = resolved[0], rschema = resolved[1];
-
-    return Context.Cursor(refs,
-                          rpath,   newvpath, 
-                          rschema, newvalue) ;
-  }
-});
-
-/***
- * Focus on key of schema for current value
- */
-var focusSchema = Context.caseOn({
-  Cursor: function focusSchemaCursor(refs,spath,vpath,schema,value,key){
-    var newspath = append(key,spath);
-    var resolved = resolveRef(refs,newspath,schema)
-      , rpath = resolved[0], rschema = resolved[1];
-
-    return Context.Cursor(refs,
-                          rpath,   vpath, 
-                          rschema, value) ;
-  }
-});
-
-
-/***
- * Focus on key of value for current schema 
- */
-var focusValue = Context.caseOn({
-  Cursor: function focusValueCursor(refs,spath,vpath,schema,value,key){
-    return Context.Cursor(refs,
-                          spath,  append(key,vpath), 
-                          schema, path([key],value)) ;
-  }
-});
 
 /***
  * Get current schema and value
+ *
+ *   Context.Cursor -> Either Err (a, b)
  */
 var getCurrent = Context.case({
   Cursor: function getCurrentCursor(refs,spath,vpath,schema,value){
-    // console.log('~~~~~' + JSON.stringify([spath,vpath]));
-    return [ path(spath,schema), value ];
-  }
-});
-
-/***
- * Get schema at sibling key to current
- * (used by additionalProperties, e.g.)
- */
-var getSiblingSchema = Context.caseOn({
-  Cursor: function getSiblingSchema(refs,spath,vpath,schema,value,key){
-    return path( append(key,dropLast(1,spath)), schema );
+    return map( function(m){ return [ m, value ]; }, path(spath,schema) );
   }
 });
 
 
 /***
- * Get current schema path and value path, not resolving refs
+ * Get current schema
+ *
+ *   Context.Cursor -> Either Err a
  */
-var getCurrentPath = Context.case({
-  Cursor: function getCurrentPathCursor(refs,spath,vpath,schema,value){
-    return [ spath, vpath ];
+var getSchema = Context.case({
+  Cursor: function getSchemaCursor(refs,spath,vpath,schema,value){
+    return path(spath,schema);
   }
 });
 
+
+/***
+ * Resolve ref at schema spath in refs, or return [spath,schema] if no ref
+ * Note: refs must have normalized url keys
+ * Returns an Either, with error (Left) states for cyclical refs and unknown paths
+ *
+ *  Object -> Array String|Number -> Object -> Object -> Either Err.Ref ((Array String|Number), Object)
+ */
+function resolveRef(refs,spath,schema,cyc){
+  cyc = cyc || {}
+  var cur = path(spath,schema);
+  return chain( function(s){
+      if (typeof s == 'object' && '$ref' in s){
+        var ref = url.resolveTo(schema, s['$ref'])
+          , parts = url.getBaseAndPath(ref)
+          , refdoc = parts[0], refpath = parts[1]; 
+
+        if (ref in cyc){
+          return Either.Left(Err.Ref('Cyclical reference detected',spath,ref));
+        } else if (url.isLocalTo(schema, ref)){
+          cyc[ref] = true;
+          return resolveRef(refs, refpath, schema, cyc);
+        } else if (refdoc in refs){
+          cyc[ref] = true;
+          return resolveRef(refs, refpath, refs[refdoc], cyc);
+        } else {
+          return Either.Left(Err.Ref('Unknown resource',spath,refdoc));
+        }
+      }
+      return Either.Right([spath,schema]);
+    },
+    cur
+  );
+}
 
 module.exports = {
-  init: init,
+  Path: Path,
   Context: Context, 
+  init: init,
   focus: focus, 
-  focusSchema: focusSchema, 
-  focusValue: focusValue, 
-  focusPair: focusPair,
-  focusSiblingSchemaPair: focusSiblingSchemaPair,
+  subcontexts: subcontexts,
   getCurrent: getCurrent,
-  getSiblingSchema: getSiblingSchema,
-  getCurrentPath: getCurrentPath
+  getSchema: getSchema
 }
 
